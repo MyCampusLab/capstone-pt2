@@ -1,10 +1,23 @@
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:logger/logger.dart';
+import 'package:visionsafe/app/data/models/telemetry_model.dart';
 
 class VisionServiceProvider extends GetxService {
   static const _channel = MethodChannel('com.irsyad.visionsafe/service');
+  static const _eventChannel = EventChannel('com.irsyad.visionsafe/telemetry');
   final _logger = Logger();
+
+  Stream<TelemetryModel> get telemetryStream {
+    return _eventChannel.receiveBroadcastStream().map((dynamic event) {
+      if (event is Map) {
+        return TelemetryModel.fromMap(event.cast<String, dynamic>());
+      }
+      throw PlatformException(code: 'INVALID_DATA', message: 'Expected Map from native');
+    }).handleError((Object error) {
+      _logger.e('Native Telemetry Stream Error: $error');
+    });
+  }
 
   Future<void> startService() async {
     try {
