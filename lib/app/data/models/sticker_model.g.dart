@@ -22,13 +22,15 @@ class StickerModelAdapter extends TypeAdapter<StickerModel> {
       description: fields[2] as String,
       isUnlocked: fields[3] as bool,
       unlockedAt: fields[4] as DateTime?,
+      progress: fields[5] as double?,
+      target: fields[6] as double?,
     );
   }
 
   @override
   void write(BinaryWriter writer, StickerModel obj) {
     writer
-      ..writeByte(5)
+      ..writeByte(7)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -38,7 +40,11 @@ class StickerModelAdapter extends TypeAdapter<StickerModel> {
       ..writeByte(3)
       ..write(obj.isUnlocked)
       ..writeByte(4)
-      ..write(obj.unlockedAt);
+      ..write(obj.unlockedAt)
+      ..writeByte(5)
+      ..write(obj._progress)
+      ..writeByte(6)
+      ..write(obj._target);
   }
 
   @override
