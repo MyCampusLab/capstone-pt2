@@ -5,12 +5,14 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
+import android.util.Log
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
+    private val TAG = "VisionSafeMainActivity"
     private val METHOD_CHANNEL = "com.irsyad.visionsafe/service"
     private val EVENT_CHANNEL = "com.irsyad.visionsafe/telemetry"
 
@@ -20,8 +22,10 @@ class MainActivity : FlutterActivity() {
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        Log.d(TAG, "Configuring Flutter Engine")
         
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, METHOD_CHANNEL).setMethodCallHandler { call, result ->
+            Log.d(TAG, "Method called: ${call.method}")
             when (call.method) {
                 "startService" -> {
                     if (checkOverlayPermission()) {
@@ -45,6 +49,11 @@ class MainActivity : FlutterActivity() {
                 "requestOverlayPermission" -> {
                     requestOverlayPermission()
                     result.success(null)
+                }
+                "updateThreshold" -> {
+                    val threshold = call.argument<Double>("threshold") ?: 35.0
+                    VisionService.instance?.updateThreshold(threshold)
+                    result.success(true)
                 }
                 else -> result.notImplemented()
             }
