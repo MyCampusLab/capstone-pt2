@@ -63,6 +63,23 @@ class MainActivity : FlutterActivity() {
                     }
                     result.success(true)
                 }
+                "updateSamplingRate" -> {
+                    val samplingRate = call.argument<Int>("samplingRate") ?: 1000
+                    val sharedPref = getSharedPreferences("VisionSafePrefs", Context.MODE_PRIVATE)
+                    sharedPref.edit().putInt("samplingRate", samplingRate).apply()
+                    
+                    if (isServiceRunning(VisionService::class.java)) {
+                        val intent = Intent(this, VisionService::class.java).apply {
+                            putExtra("samplingRate", samplingRate.toLong())
+                        }
+                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                            startForegroundService(intent)
+                        } else {
+                            startService(intent)
+                        }
+                    }
+                    result.success(true)
+                }
                 else -> result.notImplemented()
             }
         }
@@ -105,6 +122,7 @@ class MainActivity : FlutterActivity() {
 
     private fun startVisionService() {
         val sharedPref = getSharedPreferences("VisionSafePrefs", Context.MODE_PRIVATE)
+        sharedPref.edit().putBoolean("service_enabled", true).apply()
         val threshold = sharedPref.getFloat("threshold", 35.0f).toDouble()
 
         val intent = Intent(this, VisionService::class.java).apply {
@@ -118,6 +136,8 @@ class MainActivity : FlutterActivity() {
     }
 
     private fun stopVisionService() {
+        val sharedPref = getSharedPreferences("VisionSafePrefs", Context.MODE_PRIVATE)
+        sharedPref.edit().putBoolean("service_enabled", false).apply()
         stopService(Intent(this, VisionService::class.java))
     }
 

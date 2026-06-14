@@ -118,4 +118,19 @@ class ProfileRepository {
       ];
     }
   }
+
+  Future<void> updateProfile(ProfileModel profile) async {
+    await _initBox();
+    await _profileBox?.put(profile.id, profile.toMap());
+
+    try {
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user != null && user.id == profile.id) {
+        await Supabase.instance.client
+            .from('profiles')
+            .update(profile.toMap())
+            .eq('id', profile.id);
+      }
+    } catch (_) {}
+  }
 }

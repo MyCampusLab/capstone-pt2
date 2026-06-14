@@ -7,6 +7,7 @@ class ConfigService extends GetxService {
   late Box _settingsBox;
   static const String _thresholdKey = 'violation_threshold';
   static const String _serviceEnabledKey = 'service_enabled';
+  static const String _isFirstRunKey = 'is_first_run_v1';
   static const String _pendingSyncKey = 'settings_pending_sync';
   static const double _defaultThreshold = 30.0;
 
@@ -14,6 +15,8 @@ class ConfigService extends GetxService {
   final threshold = _defaultThreshold.obs;
   final isServiceEnabled = false.obs;
   final isSyncing = false.obs;
+
+  bool get isFirstRun => _settingsBox.get(_isFirstRunKey, defaultValue: true);
 
   Future<ConfigService> init() async {
     _settingsBox = await Hive.openBox('settings');
@@ -51,6 +54,10 @@ class ConfigService extends GetxService {
   // Method pembantu dengan performa tinggi
   void toggleService(bool value) => isServiceEnabled.value = value;
   
+  void completeOnboarding() {
+    _settingsBox.put(_isFirstRunKey, false);
+  }
+
   void updateThreshold(double value) {
     threshold.value = value;
   }

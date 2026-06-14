@@ -4,8 +4,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:crypto/crypto.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart' as flutter_secure_storage;
 import '../models/telemetry_model.dart';
+import 'config_service.dart';
 import 'sync_service.dart';
 import 'supabase_service.dart';
 import 'observability_service.dart';
@@ -31,10 +32,33 @@ class TelemetryService extends GetxService {
   final isViolation = false.obs;
   final isBlinking = false.obs;
   final blinkCount = 0.obs;
+  final isPowerSaveActive = false.obs;
+  final eyeMovement = 'center'.obs;
+  final isSquinting = false.obs;
 
   Future<TelemetryService> init() async {
-    final encryptionKey = sha256.convert(utf8.encode('visionsafe-super-secret-key')).bytes;
+    const secureStorage = flutter_secure_storage.FlutterSecureStorage();
     
+    // Mencari kunci enkripsi yang sudah ada
+    String? base64Key = await secureStorage.read(key: 'hive_encryption_key');
+    List<int> encryptionKey;
+
+    if (base64Key == null) {
+      // Jika belum ada, buat kunci baru (Standar AES-256)
+      encryptionKey = Hive.generateSecureKey();
+      await secureStorage.write(
+        key: 'hive_encryption_key',
+        value: base64.encode(encryptionKey),
+      );
+      _observability.log(
+        severity: LogSeverity.info,
+        category: 'SECURITY',
+        message: 'Kunci enkripsi baru berhasil dibuat dan disimpan dengan aman.',
+      );
+    } else {
+      encryptionKey = base64.decode(base64Key);
+    }
+
     _telemetryBox = await Hive.openBox(
       'telemetry_logs',
       encryptionCipher: HiveAesCipher(encryptionKey),
@@ -58,6 +82,18 @@ class TelemetryService extends GetxService {
 
     _telemetrySubscription = _eventChannel.receiveBroadcastStream().listen((dynamic event) {
       if (event is Map) {
+        // Cek sinkronisasi status service dari Native
+        if (event['status'] == 'STOPPED') {
+          if (Get.isRegistered<ConfigService>()) {
+            Get.find<ConfigService>().toggleService(false);
+          }
+          return;
+        }
+
+        if (event.containsKey('isPowerSaveActive')) {
+          isPowerSaveActive.value = event['isPowerSaveActive'] == true;
+        }
+
         final model = TelemetryModel.fromMap(event);
         
         final now = DateTime.now();
@@ -65,6 +101,8 @@ class TelemetryService extends GetxService {
           currentDistance.value = model.distance;
           isViolation.value = model.isViolation;
           isBlinking.value = model.isBlinking;
+          eyeMovement.value = model.eyeMovement;
+          isSquinting.value = model.isSquinting;
           if (model.isBlinking) blinkCount.value++;
           lastUiUpdateTime = now;
         }
@@ -116,7 +154,7 @@ class TelemetryService extends GetxService {
 
   List<TelemetryModel> getAllLocalLogs() {
     return _telemetryBox.values
-        .map((jsonStr) => TelemetryModel.fromJson(jsonStr))
+        .map((jsonStr) => TelemetryModel.fromJson(jsonStr as String))
         .toList();
   }
 

@@ -8,10 +8,14 @@ import 'package:visionsafe/app/data/services/reward_service.dart';
 import 'package:visionsafe/app/data/repositories/auth_repository.dart';
 import 'package:visionsafe/app/data/services/news_service.dart';
 import 'package:visionsafe/app/data/repositories/profile_repository.dart';
+import 'package:visionsafe/app/data/services/observability_service.dart';
 
 class GlobalBinding extends Bindings {
   @override
   void dependencies() {
+    // 0. Observability (Logging & Monitoring)
+    Get.put(ObservabilityService(), permanent: true);
+
     // 1. Critical Base Services
     Get.put(SupabaseService(), permanent: true);
     Get.put(AuthService(), permanent: true);

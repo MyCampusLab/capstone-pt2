@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:visionsafe/app/presentation/global_widgets/molecules/vizo_mascot.dart';
 
@@ -5,12 +6,14 @@ class AnimatedRobotMascot extends StatefulWidget {
   final double size;
   final VizoState state;
   final Offset lookAt;
+  final bool isBlinking;
 
   const AnimatedRobotMascot({
     super.key,
     required this.size,
     required this.state,
     required this.lookAt,
+    this.isBlinking = false,
   });
 
   @override
@@ -19,6 +22,9 @@ class AnimatedRobotMascot extends StatefulWidget {
 
 class _AnimatedRobotMascotState extends State<AnimatedRobotMascot> with TickerProviderStateMixin {
   late AnimationController _floatController;
+  bool _isNaturalBlinking = false;
+  Timer? _naturalBlinkTimer;
+  Timer? _blinkDurationTimer;
 
   @override
   void initState() {
@@ -27,11 +33,29 @@ class _AnimatedRobotMascotState extends State<AnimatedRobotMascot> with TickerPr
       vsync: this, 
       duration: const Duration(seconds: 2),
     )..repeat(reverse: true);
+
+    _startNaturalBlinking();
+  }
+
+  void _startNaturalBlinking() {
+    _naturalBlinkTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      if (mounted) {
+        setState(() => _isNaturalBlinking = true);
+        _blinkDurationTimer?.cancel();
+        _blinkDurationTimer = Timer(const Duration(milliseconds: 160), () {
+          if (mounted) {
+            setState(() => _isNaturalBlinking = false);
+          }
+        });
+      }
+    });
   }
 
   @override
   void dispose() {
     _floatController.dispose();
+    _naturalBlinkTimer?.cancel();
+    _blinkDurationTimer?.cancel();
     super.dispose();
   }
 
@@ -214,7 +238,7 @@ class _AnimatedRobotMascotState extends State<AnimatedRobotMascot> with TickerPr
   }
 
   Widget _buildEyes() {
-    bool isSleeping = widget.state == VizoState.sleeping || widget.state == VizoState.tired;
+    bool isSleeping = widget.state == VizoState.sleeping || widget.state == VizoState.tired || widget.isBlinking || _isNaturalBlinking;
     bool isWorried = widget.state == VizoState.worried || widget.state == VizoState.intervention || widget.state == VizoState.sad;
     bool isSurprised = widget.state == VizoState.surprised;
     bool isHappy = widget.state == VizoState.happy;
@@ -244,14 +268,79 @@ class _AnimatedRobotMascotState extends State<AnimatedRobotMascot> with TickerPr
     if (isHappy) {
       return Icon(Icons.favorite_rounded, color: const Color(0xFF1A1A1A), size: widget.size * 0.15);
     }
-    return Container(
-      width: isSurprised ? widget.size * 0.16 : widget.size * 0.12,
-      height: isClosed ? widget.size * 0.03 : (isSurprised ? widget.size * 0.16 : widget.size * 0.12),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1A1A1A),
-        shape: isSurprised ? BoxShape.circle : BoxShape.rectangle,
-        borderRadius: isSurprised ? null : BorderRadius.circular(isClosed ? 2 : (widget.size * 0.06)),
-      ),
+    
+    final double eyeWidth = isSurprised ? widget.size * 0.16 : widget.size * 0.12;
+    final double eyeHeight = isClosed ? widget.size * 0.03 : (isSurprised ? widget.size * 0.16 : widget.size * 0.12);
+    
+    if (isClosed) {
+      return Container(
+        width: eyeWidth,
+        height: eyeHeight,
+        decoration: BoxDecoration(
+          color: const Color(0xFF1A1A1A),
+          borderRadius: BorderRadius.circular(2),
+        ),
+      );
+    }
+
+    // Kalkulasi pergeseran pupil dinamis dengan transisi interpolasi halus
+    final double pupilMaxShiftX = eyeWidth * 0.22;
+    final double pupilMaxShiftY = eyeHeight * 0.22;
+
+    return TweenAnimationBuilder<Offset>(
+      tween: Tween<Offset>(begin: Offset.zero, end: widget.lookAt),
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeOutCubic,
+      builder: (context, animatedLookAt, child) {
+        final double dx = animatedLookAt.dx.clamp(-1.0, 1.0) * pupilMaxShiftX;
+        final double dy = animatedLookAt.dy.clamp(-1.0, 1.0) * pupilMaxShiftY;
+
+        return Container(
+          width: eyeWidth,
+          height: eyeHeight,
+          decoration: BoxDecoration(
+            color: const Color(0xFF1A1A1A),
+            shape: isSurprised ? BoxShape.circle : BoxShape.rectangle,
+            borderRadius: isSurprised ? null : BorderRadius.circular(widget.size * 0.06),
+          ),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // Pupil Bercahaya (Glow Pupil)
+              Transform.translate(
+                offset: Offset(dx, dy),
+                child: Container(
+                  width: eyeWidth * 0.5,
+                  height: eyeHeight * 0.5,
+                  decoration: BoxDecoration(
+                    color: VizoMascot.getStateColor(widget.state),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: VizoMascot.getStateColor(widget.state).withAlpha(150),
+                        blurRadius: 8,
+                        spreadRadius: 1,
+                      )
+                    ],
+                  ),
+                ),
+              ),
+              // Kilatan Cahaya Mata (Reflection/Glint)
+              Transform.translate(
+                offset: Offset(dx - eyeWidth * 0.1, dy - eyeHeight * 0.1),
+                child: Container(
+                  width: eyeWidth * 0.15,
+                  height: eyeHeight * 0.15,
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 

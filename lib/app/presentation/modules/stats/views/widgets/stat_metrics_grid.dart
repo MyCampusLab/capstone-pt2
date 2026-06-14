@@ -10,25 +10,57 @@ class StatMetricsGrid extends GetView<StatsController> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return Obx(() => Column(
       children: [
         Row(
           children: [
-            Expanded(child: _buildMetricItem("DURASI AKTIF", "4.5", "JAM", Icons.timer_rounded, AppColors.primary)),
+            Expanded(
+              child: _buildMetricItem(
+                "DURASI AKTIF",
+                controller.screenTimeHours.value.toStringAsFixed(1),
+                "JAM",
+                Icons.timer_rounded,
+                AppColors.primary,
+              ),
+            ),
             const SizedBox(width: 16),
-            Expanded(child: _buildMetricItem("RATA JARAK", "38", "CM", Icons.straighten_rounded, AppColors.success)),
+            Expanded(
+              child: _buildMetricItem(
+                "RATA JARAK",
+                controller.averageDistance.value.toStringAsFixed(0),
+                "CM",
+                Icons.straighten_rounded,
+                AppColors.success,
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 16),
         Row(
           children: [
-            Expanded(child: _buildMetricItem("PELANGGARAN", "12", "KALI", Icons.warning_amber_rounded, AppColors.danger)),
+            Expanded(
+              child: _buildMetricItem(
+                "PELANGGARAN",
+                "${controller.totalViolationsCount.value}",
+                "KALI",
+                Icons.warning_amber_rounded,
+                AppColors.danger,
+              ),
+            ),
             const SizedBox(width: 16),
-            Expanded(child: _buildMetricItem("ISTIRAHAT", "30", "MENIT", Icons.bedtime_rounded, Colors.purple)),
+            Expanded(
+              child: _buildMetricItem(
+                "ISTIRAHAT",
+                (controller.restTimeHours.value * 60).toStringAsFixed(0),
+                "MENIT",
+                Icons.bedtime_rounded,
+                Colors.purple,
+              ),
+            ),
           ],
         ),
       ],
-    );
+    ));
   }
 
   Widget _buildMetricItem(String label, String value, String unit, IconData icon, Color color) {

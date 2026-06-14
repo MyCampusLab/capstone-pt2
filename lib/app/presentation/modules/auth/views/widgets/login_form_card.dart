@@ -43,10 +43,14 @@ class LoginFormCard extends GetView<AuthController> {
               FadeInUp(
                 delay: const Duration(milliseconds: 200),
                 child: VInput(
+                  key: const Key('login_email_input'),
                   hint: "Username/Email",
                   prefixIcon: Icons.alternate_email_rounded,
                   controller: controller.emailController,
                   keyboardType: TextInputType.emailAddress,
+                  autofillHints: const [AutofillHints.email],
+                  textInputAction: TextInputAction.next,
+                  focusNode: controller.loginEmailFocus,
                 ),
               ),
               
@@ -55,10 +59,15 @@ class LoginFormCard extends GetView<AuthController> {
               FadeInUp(
                 delay: const Duration(milliseconds: 350),
                 child: VInput(
+                  key: const Key('login_password_input'),
                   hint: "Password",
                   prefixIcon: Icons.lock_person_rounded,
                   isPassword: true,
                   controller: controller.passwordController,
+                  autofillHints: const [AutofillHints.password],
+                  textInputAction: TextInputAction.done,
+                  onSubmitted: (_) => controller.login(),
+                  focusNode: controller.loginPasswordFocus,
                 ),
               ),
               
@@ -71,7 +80,7 @@ class LoginFormCard extends GetView<AuthController> {
                   label: "LET'S GO!",
                   icon: Icons.bolt_rounded,
                   isLoading: controller.isLoading.value,
-                  onPressed: () => controller.login(),
+                  onPressed: controller.isLoading.value ? null : () => controller.login(),
                 )),
               ),
               
@@ -81,9 +90,15 @@ class LoginFormCard extends GetView<AuthController> {
               
               FadeInUp(
                 delay: const Duration(milliseconds: 700),
-                child: AuthSocialSection(
-                  onGoogleTap: () => controller.loginWithGoogle(),
-                ),
+                child: Obx(() => IgnorePointer(
+                  ignoring: controller.isLoading.value,
+                  child: Opacity(
+                    opacity: controller.isLoading.value ? 0.5 : 1.0,
+                    child: AuthSocialSection(
+                      onGoogleTap: () => controller.loginWithGoogle(),
+                    ),
+                  ),
+                )),
               ),
             ],
           ),

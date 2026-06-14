@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -6,6 +7,124 @@ import 'package:visionsafe/app/core/values/app_text_styles.dart';
 import 'package:visionsafe/app/core/values/app_design.dart';
 import 'package:visionsafe/app/presentation/modules/home/controllers/home_controller.dart';
 import 'package:visionsafe/app/presentation/global_widgets/molecules/vizo_mascot.dart';
+
+/// Flying XP item holding rendering coordinates and uniqueness.
+class _FlyingXpItem {
+  final int id;
+  final String text;
+  final Offset offset;
+
+  _FlyingXpItem({
+    required this.id,
+    required this.text,
+    required this.offset,
+  });
+}
+
+/// Floating animative XP indicator that rises, scales with bounce, and fades.
+class _FlyingXpWidget extends StatefulWidget {
+  final String text;
+  final Offset startOffset;
+  final VoidCallback onComplete;
+
+  const _FlyingXpWidget({
+    required this.text,
+    required this.startOffset,
+    required this.onComplete,
+    super.key,
+  });
+
+  @override
+  State<_FlyingXpWidget> createState() => _FlyingXpWidgetState();
+}
+
+class _FlyingXpWidgetState extends State<_FlyingXpWidget> with SingleTickerProviderStateMixin {
+  late AnimationController _animController;
+  late Animation<double> _opacity;
+  late Animation<double> _translateY;
+  late Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _animController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 950),
+    );
+
+    _opacity = Tween<double>(begin: 1.0, end: 0.0).animate(
+      CurvedAnimation(
+        parent: _animController,
+        curve: const Interval(0.65, 1.0, curve: Curves.easeIn),
+      ),
+    );
+
+    _translateY = Tween<double>(begin: 0.0, end: -95.0).animate(
+      CurvedAnimation(
+        parent: _animController,
+        curve: Curves.easeOutBack,
+      ),
+    );
+
+    _scale = Tween<double>(begin: 0.5, end: 1.25).animate(
+      CurvedAnimation(
+        parent: _animController,
+        curve: Curves.elasticOut,
+      ),
+    );
+
+    _animController.forward().then((_) => widget.onComplete());
+  }
+
+  @override
+  void dispose() {
+    _animController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _animController,
+      builder: (context, child) {
+        // Center the pop-up above Vizo's head dynamically
+        return Positioned(
+          top: 35 + widget.startOffset.dy + _translateY.value,
+          left: 80 + widget.startOffset.dx,
+          child: Opacity(
+            opacity: _opacity.value,
+            child: Transform.scale(
+              scale: _scale.value,
+              child: child,
+            ),
+          ),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: AppColors.warning,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: AppColors.primaryDark, width: 2.5),
+          boxShadow: const [
+            BoxShadow(
+              color: AppColors.primaryDark,
+              offset: Offset(2, 2),
+            ),
+          ],
+        ),
+        child: Text(
+          widget.text,
+          style: AppTextStyles.bodyBold.copyWith(
+            color: AppColors.primaryDark,
+            fontSize: 13,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 /// LiveVizoRadar: Premium interactive assistant with dynamic status visual feedback.
 class LiveVizoRadar extends StatefulWidget {
@@ -18,16 +137,44 @@ class LiveVizoRadar extends StatefulWidget {
 class _LiveVizoRadarState extends State<LiveVizoRadar> with SingleTickerProviderStateMixin {
   late AnimationController _pulseController;
   final controller = Get.find<HomeController>();
-  bool _isSurprised = false;
+  
+  // Interactive gamified states
+  VizoState? _interactiveState;
+  final List<_FlyingXpItem> _xpItems = [];
+  int _itemCounter = 0;
 
   void _handleTap() {
-    if (_isSurprised) return;
-    
     HapticFeedback.heavyImpact();
-    setState(() => _isSurprised = true);
     
-    Future.delayed(const Duration(seconds: 1), () {
-      if (mounted) setState(() => _isSurprised = false);
+    // Switch to a random energetic/happy state
+    final randomStates = [VizoState.happy, VizoState.surprised, VizoState.focused, VizoState.exercise];
+    final selectedState = (randomStates..shuffle()).first;
+    
+    setState(() {
+      _interactiveState = selectedState;
+    });
+
+    // Generate floating text "+5 XP!" pop-up above mascot
+    final randomDx = (DateTime.now().millisecond % 50) - 25.0; // Random offset between -25 and +25
+    final randomDy = (DateTime.now().millisecond % 20) - 10.0; // Random offset between -10 and +10
+    final itemId = _itemCounter++;
+    
+    setState(() {
+      _xpItems.add(_FlyingXpItem(
+        id: itemId,
+        text: "+5 XP!",
+        offset: Offset(randomDx, randomDy),
+      ));
+    });
+
+    // Add XP instantly in controller
+    controller.addXp(5);
+
+    // Reset mascot state back to normal after a short delay (1.5 seconds)
+    Future.delayed(const Duration(milliseconds: 1500), () {
+      if (mounted && _interactiveState == selectedState) {
+        setState(() => _interactiveState = null);
+      }
     });
   }
 
@@ -109,6 +256,20 @@ class _LiveVizoRadarState extends State<LiveVizoRadar> with SingleTickerProvider
                       bottom: 20,
                       child: _buildStatusBadge(distance, isViolation),
                     ),
+
+                    // Floating XP dynamic widgets
+                    ..._xpItems.map((item) => _FlyingXpWidget(
+                      key: ValueKey(item.id),
+                      text: item.text,
+                      startOffset: item.offset,
+                      onComplete: () {
+                        if (mounted) {
+                          setState(() {
+                            _xpItems.removeWhere((x) => x.id == item.id);
+                          });
+                        }
+                      },
+                    )),
                   ],
                 ),
               ),
@@ -142,13 +303,36 @@ class _LiveVizoRadarState extends State<LiveVizoRadar> with SingleTickerProvider
   }
 
   Widget _buildMascot(bool isViolation) {
+    final bool isSquinting = controller.telemetryService.isSquinting.value;
+    final bool isUserBlinking = controller.telemetryService.isBlinking.value;
+    
     VizoState mascotState = isViolation ? VizoState.worried : VizoState.idle;
-    if (_isSurprised) mascotState = VizoState.surprised;
+    if (isSquinting && !isViolation) {
+      mascotState = VizoState.tired;
+    }
+    
+    if (_interactiveState != null) {
+      mascotState = _interactiveState!;
+    }
+
+    final String movement = controller.telemetryService.eyeMovement.value;
+    Offset lookOffset = Offset.zero;
+    if (movement == 'left') {
+      lookOffset = const Offset(-1.0, 0.0);
+    } else if (movement == 'right') {
+      lookOffset = const Offset(1.0, 0.0);
+    } else if (movement == 'up') {
+      lookOffset = const Offset(0.0, -1.0);
+    } else if (movement == 'down') {
+      lookOffset = const Offset(0.0, 1.0);
+    }
 
     return VizoMascot(
       size: 140,
       state: mascotState,
       onTap: _handleTap,
+      lookAt: lookOffset,
+      isBlinking: isUserBlinking,
     );
   }
 }

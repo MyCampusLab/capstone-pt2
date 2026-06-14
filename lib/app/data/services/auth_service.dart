@@ -52,7 +52,7 @@ class AuthService extends GetxService {
     });
   }
 
-  Future<void> signIn(String email, String password) async {
+  Future<AuthResponse> signIn(String email, String password) async {
     try {
       final response = await _supabase.auth.signInWithPassword(
         email: email,
@@ -63,6 +63,7 @@ class AuthService extends GetxService {
         await _secureStorage.write(key: 'saved_email', value: email);
         _logger.i('Autentikasi Berhasil: ${response.user!.email}');
       }
+      return response;
     } catch (e) {
       _logger.e('Kesalahan Autentikasi: $e');
       rethrow;
@@ -70,14 +71,15 @@ class AuthService extends GetxService {
   }
 
   /// Registrasi akun baru menggunakan kredensial email dan nama.
-  Future<void> signUp(String email, String password, {String? name}) async {
+  Future<AuthResponse> signUp(String email, String password, {String? name}) async {
     try {
-      await _supabase.auth.signUp(
+      final response = await _supabase.auth.signUp(
         email: email, 
         password: password,
         data: name != null ? {'full_name': name} : null,
       );
       _logger.i('Registrasi Berhasil untuk: $email');
+      return response;
     } catch (e) {
       _logger.e('Kesalahan Registrasi: $e');
       rethrow;
@@ -163,6 +165,14 @@ class AuthService extends GetxService {
     try {
       await _supabase.auth.signOut();
       await _secureStorage.delete(key: 'saved_email');
+      
+      // Logout from Google to ensure clean state for account switching
+      try {
+        await GoogleSignIn().signOut();
+      } catch (e) {
+        _logger.w('Gagal sign out dari Google (mungkin login via email): $e');
+      }
+      
       _logger.i('Sesi Berakhir: User Logged Out');
     } catch (e) {
       _logger.e('Gagal Logout: $e');

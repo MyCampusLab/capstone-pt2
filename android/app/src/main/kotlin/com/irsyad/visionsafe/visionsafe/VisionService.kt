@@ -25,7 +25,8 @@ class VisionService : Service(), androidx.lifecycle.LifecycleOwner {
     private lateinit var overlayManager: BlurOverlayManager
     private val cameraExecutor = Executors.newSingleThreadExecutor()
 
-    private val SAMPLING_RATE_MS = 500L
+    private var SAMPLING_RATE_MS = 1000L // Dioptimalkan: 1 detik sekali (Dapat diubah secara dinamis)
+    private var isPowerSaveActive = false
     private var lastProcessedTime = 0L
     private var violationStartTime = 0L
     private var violationThresholdCm = 35.0
@@ -33,6 +34,7 @@ class VisionService : Service(), androidx.lifecycle.LifecycleOwner {
 
     companion object {
         var instance: VisionService? = null
+        const val ACTION_STOP = "com.irsyad.visionsafe.ACTION_STOP"
     }
 
     fun updateThreshold(newThreshold: Double) {
@@ -52,6 +54,35 @@ class VisionService : Service(), androidx.lifecycle.LifecycleOwner {
                     cameraManager.start()
                 }
             }
+        }
+    }
+
+    private val batteryReceiver = object : android.content.BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            val level = intent.getIntExtra(android.os.BatteryManager.EXTRA_LEVEL, -1)
+            val scale = intent.getIntExtra(android.os.BatteryManager.EXTRA_SCALE, -1)
+            val status = intent.getIntExtra(android.os.BatteryManager.EXTRA_STATUS, -1)
+            
+            val batteryPct = if (scale > 0) level * 100 / scale.toFloat() else 100.0f
+            val isCharging = status == android.os.BatteryManager.BATTERY_STATUS_CHARGING ||
+                             status == android.os.BatteryManager.BATTERY_STATUS_FULL
+                            
+            updateSamplingRateBasedOnBattery(batteryPct, isCharging)
+        }
+    }
+
+    private fun updateSamplingRateBasedOnBattery(batteryPct: Float, isCharging: Boolean) {
+        val oldRate = SAMPLING_RATE_MS
+        if (batteryPct <= 20.0f && !isCharging) {
+            SAMPLING_RATE_MS = if (batteryPct <= 10.0f) 5000L else 3000L
+            isPowerSaveActive = true
+        } else {
+            val sharedPref = getSharedPreferences("VisionSafePrefs", Context.MODE_PRIVATE)
+            SAMPLING_RATE_MS = sharedPref.getInt("samplingRate", 1000).toLong()
+            isPowerSaveActive = false
+        }
+        if (oldRate != SAMPLING_RATE_MS) {
+            Log.i("VisionSafe", "DYNAMIC FPS: Battery level $batteryPct%, Charging: $isCharging. Sampling rate adjusted to $SAMPLING_RATE_MS ms (Power Save: $isPowerSaveActive)")
         }
     }
 
@@ -76,13 +107,54 @@ class VisionService : Service(), androidx.lifecycle.LifecycleOwner {
         } else {
             registerReceiver(screenStateReceiver, filter)
         }
+
+        val batteryFilter = android.content.IntentFilter(Intent.ACTION_BATTERY_CHANGED)
+        val batteryStatusIntent = registerReceiver(batteryReceiver, batteryFilter)
+        batteryStatusIntent?.let {
+            val level = it.getIntExtra(android.os.BatteryManager.EXTRA_LEVEL, -1)
+            val scale = it.getIntExtra(android.os.BatteryManager.EXTRA_SCALE, -1)
+            val status = it.getIntExtra(android.os.BatteryManager.EXTRA_STATUS, -1)
+            val batteryPct = if (scale > 0) level * 100 / scale.toFloat() else 100.0f
+            val isCharging = status == android.os.BatteryManager.BATTERY_STATUS_CHARGING ||
+                             status == android.os.BatteryManager.BATTERY_STATUS_FULL
+            updateSamplingRateBasedOnBattery(batteryPct, isCharging)
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         lifecycleRegistry.handleLifecycleEvent(androidx.lifecycle.Lifecycle.Event.ON_START)
         
+        // Handle Action STOP dari Notifikasi
+        if (intent?.action == ACTION_STOP) {
+            Log.i("VisionSafe", "Received STOP action from notification")
+            val sharedPref = getSharedPreferences("VisionSafePrefs", Context.MODE_PRIVATE)
+            sharedPref.edit().putBoolean("service_enabled", false).apply()
+            stopSelf()
+            return START_NOT_STICKY
+        }
+
+        // Layer 2 Lock: Pastikan service tidak berjalan jika service_enabled bernilai false
+        val sharedPref = getSharedPreferences("VisionSafePrefs", Context.MODE_PRIVATE)
+        val isServiceEnabled = sharedPref.getBoolean("service_enabled", false)
+        if (!isServiceEnabled) {
+            Log.w("VisionSafe", "VisionService start command ignored because service_enabled is false.")
+            stopSelf()
+            return START_NOT_STICKY
+        }
+
         intent?.getDoubleExtra("threshold", -1.0)?.let {
             if (it > 0) violationThresholdCm = it
+        }
+
+        intent?.getLongExtra("samplingRate", -1L)?.let {
+            if (it > 0) {
+                if (!isPowerSaveActive) {
+                    SAMPLING_RATE_MS = it
+                    Log.d("VisionSafe", "Sampling rate updated via intent to: $it ms")
+                } else {
+                    Log.d("VisionSafe", "Sampling rate updated in prefs to $it ms, but ignored for now because Power Save is active.")
+                }
+            }
         }
 
         // Cek Izin Kamera sebelum startForeground (Krusial untuk Android 14+)
@@ -141,7 +213,7 @@ class VisionService : Service(), androidx.lifecycle.LifecycleOwner {
 
         val distance = result.distance
         val isViolation = distance < violationThresholdCm
-        sendTelemetry(distance, isViolation, result.isBlinking)
+        sendTelemetry(distance, isViolation, result.isBlinking, result.eyeMovement, result.isSquinting)
 
         if (isViolation) {
             if (violationStartTime == 0L) violationStartTime = currentTime
@@ -160,13 +232,22 @@ class VisionService : Service(), androidx.lifecycle.LifecycleOwner {
         }
     }
 
-    private fun sendTelemetry(distance: Double, isViolation: Boolean, isBlinking: Boolean) {
+    private fun sendTelemetry(
+        distance: Double, 
+        isViolation: Boolean, 
+        isBlinking: Boolean,
+        eyeMovement: String = "center",
+        isSquinting: Boolean = false
+    ) {
         MainActivity.eventSink?.let { sink ->
             android.os.Handler(android.os.Looper.getMainLooper()).post {
                 sink.success(mapOf(
                     "distance" to distance, 
                     "isViolation" to isViolation, 
                     "isBlinking" to isBlinking,
+                    "eyeMovement" to eyeMovement,
+                    "isSquinting" to isSquinting,
+                    "isPowerSaveActive" to isPowerSaveActive,
                     "timestamp" to System.currentTimeMillis()
                 ))
             }
@@ -180,13 +261,20 @@ class VisionService : Service(), androidx.lifecycle.LifecycleOwner {
     }
 
     private fun createNotification(): Notification {
+        val mainIntent = Intent(this, MainActivity::class.java)
+        val pendingMainIntent = PendingIntent.getActivity(
+            this, 0, mainIntent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+
         return NotificationCompat.Builder(this, "VisionSafeServiceChannel")
             .setContentTitle("VisionSafe: Mata Vizo Melindungi")
             .setContentText("Status: Aktif & Mengawasi")
             .setSmallIcon(android.R.drawable.ic_menu_view)
             .setOngoing(true)
             .setCategory(Notification.CATEGORY_SERVICE)
-            .setPriority(NotificationCompat.PRIORITY_MAX) // Prioritas tertinggi
+            .setPriority(NotificationCompat.PRIORITY_MAX)
+            .setContentIntent(pendingMainIntent)
             .build()
     }
 
@@ -200,10 +288,58 @@ class VisionService : Service(), androidx.lifecycle.LifecycleOwner {
         }
     }
 
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        Log.d("VisionSafe", "onTaskRemoved called - scheduling service restart to persist background task")
+        
+        val restartServiceIntent = Intent(applicationContext, this.javaClass).apply {
+            setPackage(packageName)
+        }
+        val restartServicePendingIntent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            PendingIntent.getForegroundService(
+                applicationContext, 1, restartServiceIntent,
+                PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_IMMUTABLE
+            )
+        } else {
+            PendingIntent.getService(
+                applicationContext, 1, restartServiceIntent,
+                PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_IMMUTABLE
+            )
+        }
+        
+        val alarmService = applicationContext.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        try {
+            alarmService.set(
+                AlarmManager.RTC_WAKEUP,
+                System.currentTimeMillis() + 1000,
+                restartServicePendingIntent
+            )
+        } catch (e: Exception) {
+            Log.e("VisionSafe", "Failed to schedule restart alarm on task removed", e)
+        }
+        
+        super.onTaskRemoved(rootIntent)
+    }
+
     override fun onDestroy() {
+        // Beritahu Flutter bahwa service telah berhenti (penting untuk sinkronisasi UI)
+        MainActivity.eventSink?.let { sink ->
+            android.os.Handler(android.os.Looper.getMainLooper()).post {
+                sink.success(mapOf("status" to "STOPPED"))
+            }
+        }
+
         instance = null
         lifecycleRegistry.handleLifecycleEvent(androidx.lifecycle.Lifecycle.Event.ON_DESTROY)
-        unregisterReceiver(screenStateReceiver)
+        try {
+            unregisterReceiver(screenStateReceiver)
+        } catch (e: Exception) {
+            Log.e("VisionSafe", "Failed to unregister screenStateReceiver", e)
+        }
+        try {
+            unregisterReceiver(batteryReceiver)
+        } catch (e: Exception) {
+            Log.e("VisionSafe", "Failed to unregister batteryReceiver", e)
+        }
         cameraManager.stop()
         analyzer.close()
         cameraExecutor.shutdown()

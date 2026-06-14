@@ -43,9 +43,13 @@ class RegisterFormCard extends GetView<AuthController> {
               FadeInUp(
                 delay: const Duration(milliseconds: 100),
                 child: VInput(
+                  key: const Key('reg_name_input'),
                   hint: "Full Name",
                   prefixIcon: Icons.badge_outlined,
                   controller: controller.nameController,
+                  autofillHints: const [AutofillHints.name],
+                  textInputAction: TextInputAction.next,
+                  focusNode: controller.regNameFocus,
                 ),
               ),
               
@@ -54,10 +58,14 @@ class RegisterFormCard extends GetView<AuthController> {
               FadeInUp(
                 delay: const Duration(milliseconds: 200),
                 child: VInput(
+                  key: const Key('reg_email_input'),
                   hint: "Email Address",
                   prefixIcon: Icons.email_outlined,
                   controller: controller.emailController,
                   keyboardType: TextInputType.emailAddress,
+                  autofillHints: const [AutofillHints.email],
+                  textInputAction: TextInputAction.next,
+                  focusNode: controller.regEmailFocus,
                 ),
               ),
               
@@ -66,10 +74,14 @@ class RegisterFormCard extends GetView<AuthController> {
               FadeInUp(
                 delay: const Duration(milliseconds: 300),
                 child: VInput(
+                  key: const Key('reg_password_input'),
                   hint: "Password",
                   prefixIcon: Icons.lock_outline_rounded,
                   isPassword: true,
                   controller: controller.passwordController,
+                  autofillHints: const [AutofillHints.password],
+                  textInputAction: TextInputAction.next,
+                  focusNode: controller.regPasswordFocus,
                 ),
               ),
               
@@ -78,10 +90,14 @@ class RegisterFormCard extends GetView<AuthController> {
               FadeInUp(
                 delay: const Duration(milliseconds: 400),
                 child: VInput(
+                  key: const Key('reg_confirm_password_input'),
                   hint: "Confirm Password",
-                  prefixIcon: Icons.history_rounded,
+                  prefixIcon: Icons.lock_reset_rounded,
                   isPassword: true,
                   controller: controller.confirmPasswordController,
+                  textInputAction: TextInputAction.done,
+                  onSubmitted: (_) => controller.register(),
+                  focusNode: controller.regConfirmPasswordFocus,
                 ),
               ),
               
@@ -93,7 +109,7 @@ class RegisterFormCard extends GetView<AuthController> {
                   label: "CREATE ACCOUNT",
                   icon: Icons.person_add_alt_1_rounded,
                   isLoading: controller.isLoading.value,
-                  onPressed: () => controller.register(),
+                  onPressed: controller.isLoading.value ? null : () => controller.register(),
                 )),
               ),
               
@@ -103,9 +119,15 @@ class RegisterFormCard extends GetView<AuthController> {
               
               FadeInUp(
                 delay: const Duration(milliseconds: 700),
-                child: AuthSocialSection(
-                  onGoogleTap: () => controller.loginWithGoogle(),
-                ),
+                child: Obx(() => IgnorePointer(
+                  ignoring: controller.isLoading.value,
+                  child: Opacity(
+                    opacity: controller.isLoading.value ? 0.5 : 1.0,
+                    child: AuthSocialSection(
+                      onGoogleTap: () => controller.loginWithGoogle(),
+                    ),
+                  ),
+                )),
               ),
               
               const SizedBox(height: AppDesign.space12),

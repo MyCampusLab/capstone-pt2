@@ -14,6 +14,7 @@ class VizoMascot extends StatelessWidget {
   final VizoState state;
   final VoidCallback? onTap;
   final Offset lookAt;
+  final bool isBlinking;
 
   const VizoMascot({
     super.key, 
@@ -21,6 +22,7 @@ class VizoMascot extends StatelessWidget {
     this.state = VizoState.idle,
     this.onTap,
     this.lookAt = Offset.zero,
+    this.isBlinking = false,
   });
 
   @override
@@ -28,7 +30,12 @@ class VizoMascot extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
-      child: AnimatedRobotMascot(size: size, state: state, lookAt: lookAt),
+      child: AnimatedRobotMascot(
+        size: size, 
+        state: state, 
+        lookAt: lookAt,
+        isBlinking: isBlinking,
+      ),
     );
   }
 

@@ -8,13 +8,13 @@ class AuthRepository extends GetxService {
   AuthService get _authService => Get.find<AuthService>();
 
   /// Melakukan login ke sistem.
-  Future<void> login(String email, String password) async {
-    await _authService.signIn(email, password);
+  Future<AuthResponse> login(String email, String password) async {
+    return await _authService.signIn(email, password);
   }
 
   /// Melakukan pendaftaran akun baru.
-  Future<void> register(String email, String password, {String? name}) async {
-    await _authService.signUp(email, password, name: name);
+  Future<AuthResponse> register(String email, String password, {String? name}) async {
+    return await _authService.signUp(email, password, name: name);
   }
 
   /// Melakukan login menggunakan Google.

@@ -42,4 +42,13 @@ class VisionServiceProvider extends GetxService {
       _logger.e('Failed to update threshold: ${e.message}');
     }
   }
+
+  Future<void> updateSamplingRate(int samplingRateMs) async {
+    try {
+      await _channel.invokeMethod('updateSamplingRate', {'samplingRate': samplingRateMs});
+      _logger.i('Sampling rate updated to: $samplingRateMs ms');
+    } on PlatformException catch (e) {
+      _logger.e('Failed to update sampling rate: ${e.message}');
+    }
+  }
 }

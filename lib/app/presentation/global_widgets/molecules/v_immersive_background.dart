@@ -83,7 +83,11 @@ class _VImmersiveBackgroundState extends State<VImmersiveBackground> with Ticker
         ),
 
         // Content
-        widget.child,
+        GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onTap: () => FocusScope.of(context).unfocus(),
+          child: widget.child,
+        ),
       ],
     );
   }

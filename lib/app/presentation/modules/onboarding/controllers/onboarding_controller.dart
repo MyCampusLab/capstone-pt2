@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:visionsafe/app/routes/app_pages.dart';
+import 'package:visionsafe/app/data/services/config_service.dart';
 
 import 'package:visionsafe/app/presentation/global_widgets/molecules/vizo_mascot.dart';
 
@@ -8,6 +9,7 @@ import 'package:visionsafe/app/presentation/global_widgets/molecules/vizo_mascot
 class OnboardingController extends GetxController {
   final pageController = PageController();
   final currentPage = 0.obs;
+  final _configService = Get.find<ConfigService>();
 
   final List<Map<String, dynamic>> pages = [
     {
@@ -33,6 +35,7 @@ class OnboardingController extends GetxController {
 
   void nextPage() {
     if (isLastPage) {
+      _configService.completeOnboarding();
       Get.offAllNamed(Routes.login);
     } else {
       pageController.nextPage(

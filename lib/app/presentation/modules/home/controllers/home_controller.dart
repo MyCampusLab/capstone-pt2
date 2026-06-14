@@ -28,14 +28,43 @@ class HomeController extends GetxController with WidgetsBindingObserver {
   final isLoading = false.obs;
   final isBackendConnected = false.obs;
   final dailyViolationMinutes = 0.0.obs;
+  final pendingSyncCount = 0.obs;
   
   final userProfile = Rxn<ProfileModel>();
-  bool _wasServiceRunningBeforePause = false;
   DateTime? _lastHapticTime;
+
+  // Real-time getters linked to TelemetryRepository
+  double get eyeHealthScore => _repository.calculateEyeHealthScore();
+  double get activeMonitoringMinutes => _repository.calculateTotalMonitoringMinutesToday();
+  int get blinkCountToday => _repository.calculateBlinkCountToday();
+  double get averageDistanceToday => _repository.calculateAverageDistanceToday();
+  String get eyeStrainLevelToday => _repository.calculateEyeStrainLevelToday();
 
   bool get isServiceRunning => _configService.isServiceEnabled.value;
   double get currentDistance => telemetryService.currentDistance.value;
   bool get isViolation => telemetryService.isViolation.value;
+
+  // AI INTELLIGENCE: Mengambil keputusan state maskot secara cerdas (Cloud + Local Context)
+  VizoState get dynamicMascotState {
+    // 1. Prioritas Utama: Kondisi darurat saat ini
+    if (isViolation) return VizoState.intervention;
+    if (currentDistance > 0 && currentDistance < _configService.threshold.value + 5.0) return VizoState.worried;
+
+    // 2. Kondisi Berdasarkan Akumulasi Data Harian (Local Intelligence)
+    if (dailyViolationMinutes.value > 10.0) return VizoState.sad; // Terlalu banyak pelanggaran
+    if (dailyViolationMinutes.value > 5.0) return VizoState.focused; // Perlu istirahat sebentar
+
+    // 3. Fallback ke state dari Profile Cloud
+    if (userProfile.value != null) {
+      return VizoState.values.firstWhere(
+        (e) => e.name == userProfile.value!.mascotState,
+        orElse: () => VizoState.happy,
+      );
+    }
+
+    // 4. Default state
+    return isServiceRunning ? VizoState.happy : VizoState.sleeping;
+  }
 
   @override
   void onInit() {
@@ -43,27 +72,29 @@ class HomeController extends GetxController with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
     _checkInitialPermissions();
     _startConnectivityPolling();
+    _startSyncMonitoring();
     _listenToProfile();
 
     ever(telemetryService.currentDistance, _handleUxFeedback);
     ever(telemetryService.isViolation, (_) => _updateStats());
   }
 
+  void _startSyncMonitoring() {
+    _updatePendingSync();
+    Timer.periodic(const Duration(seconds: 10), (_) => _updatePendingSync());
+  }
+
+  void _updatePendingSync() {
+    pendingSyncCount.value = telemetryService.getAllLocalLogs().length;
+  }
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
-    if (state == AppLifecycleState.paused && isServiceRunning) {
-      _wasServiceRunningBeforePause = true;
-      _serviceProvider.stopService();
-      _configService.toggleService(false);
-      _logger.i("Lifecycle: Menangguhkan layanan VisionSafe.");
-    } else if (state == AppLifecycleState.resumed && _wasServiceRunningBeforePause) {
-      _wasServiceRunningBeforePause = false;
-      _serviceProvider.startService().then((_) {
-        _configService.toggleService(true);
-        _logger.i("Lifecycle: Mengaktifkan kembali layanan VisionSafe.");
-      });
-    }
+    // CATATAN ARSITEKTUR: Layanan VisionSafe tetap aktif di background (Foreground Service)
+    // agar tetap bisa melindungi mata user saat membuka aplikasi lain (YouTube, TikTok, dll).
+    // Layanan hanya mati jika user menekan Toggle secara manual atau via Notifikasi.
+    _logger.t("Lifecycle State Changed: $state");
   }
 
   StreamSubscription? _profileSubscription;
@@ -124,6 +155,41 @@ class HomeController extends GetxController with WidgetsBindingObserver {
 
   void _updateStats() {
     dailyViolationMinutes.value = _repository.calculateViolationMinutesToday();
+  }
+
+  Future<void> addXp(int amount) async {
+    final profile = userProfile.value;
+    if (profile == null) return;
+
+    final currentXp = profile.xp;
+    final newXp = currentXp + amount;
+    
+    int newLevel = profile.level;
+    while (newXp >= (newLevel + 1) * 100) {
+      newLevel++;
+    }
+
+    final updatedProfile = profile.copyWith(
+      xp: newXp,
+      level: newLevel,
+      lastActiveAt: DateTime.now(),
+    );
+
+    // Update UI immediately (Reactive GetX state)
+    userProfile.value = updatedProfile;
+
+    // Show LEVEL UP toast if level increased!
+    if (newLevel > profile.level) {
+      HapticFeedback.vibrate();
+      VToast.show(
+        "LEVEL UP!", 
+        "Selamat! Kamu naik ke Level $newLevel!", 
+        state: VizoState.happy
+      );
+    }
+
+    // Persist to Hive cache and synchronize to Supabase
+    await _profileRepo.updateProfile(updatedProfile);
   }
 
   void goToCalibration() => Get.toNamed(Routes.calibration);

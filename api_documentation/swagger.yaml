@@ -1,0 +1,340 @@
+openapi: 3.0.3
+info:
+  title: VisionSafe API - Eye Guardian Backend Service
+  description: |
+    Dokumentasi resmi RESTful API VisionSafe. 
+    Backend ini di-host di atas platform Supabase (PostgreSQL Engine) dengan Row Level Security (RLS) terpadu. 
+    Semua komunikasi data terenkripsi via SSL dan diamankan dengan skema JWT (JSON Web Token) Auth serta API Key Header.
+  version: 1.0.0
+servers:
+  - url: https://tkfxqlpmccnpzefywkef.supabase.co
+    description: Production Cloud Server (Supabase Live)
+paths:
+  /auth/v1/signup:
+    post:
+      summary: Registrasi Akun Baru (User Hero)
+      description: Membuat user credential baru di dalam modul Supabase Auth.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: hero@visionsafe.id
+                password:
+                  type: string
+                  format: password
+                  minLength: 6
+                  example: SuperStrong123!
+      responses:
+        '201':
+          description: Akun berhasil dibuat, silakan cek email untuk verifikasi.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                    example: a9b8c7d6-e2f1-4321-89ab-cdef01234567
+                  email:
+                    type: string
+                    example: hero@visionsafe.id
+                  created_at:
+                    type: string
+                    format: date-time
+                    example: "2026-06-06T01:00:00Z"
+        '400':
+          description: Email sudah terdaftar atau password tidak memenuhi syarat.
+
+  /auth/v1/token:
+    post:
+      summary: Login Akun (Mendapatkan JWT)
+      description: Mengautentikasi kredensial pengguna dan mengembalikan Token Akses (JWT) serta Refresh Token.
+      parameters:
+        - name: grant_type
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [password, refresh_token]
+            example: password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: hero@visionsafe.id
+                password:
+                  type: string
+                  format: password
+                  example: SuperStrong123!
+                refresh_token:
+                  type: string
+                  example: d8c7b6a5-e3f4-5678-90ab-cdef11223344
+      responses:
+        '200':
+          description: Autentikasi sukses. Token dikembalikan.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                    description: JWT Bearer Token yang harus disertakan di setiap request aman.
+                    example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                  token_type:
+                    type: string
+                    example: bearer
+                  expires_in:
+                    type: integer
+                    example: 3600
+                  refresh_token:
+                    type: string
+                    example: d8c7b6a5-e3f4-5678-90ab-cdef11223344
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                        example: a9b8c7d6-e2f1-4321-89ab-cdef01234567
+                      email:
+                        type: string
+                        example: hero@visionsafe.id
+        '400':
+          description: Kredensial tidak cocok atau parameter tidak valid.
+
+  /auth/v1/logout:
+    post:
+      summary: Keluar Sesi (Logout)
+      description: Mencabut refresh token dan menghancurkan sesi aktif di server.
+      security:
+        - BearerAuth: []
+      responses:
+        '204':
+          description: Berhasil logout dari sistem cloud.
+        '401':
+          description: Token tidak valid atau sudah kadaluwarsa.
+
+  /rest/v1/telemetry:
+    get:
+      summary: Mengambil Data Log Telemetri Pengguna
+      description: Mengambil histori data telemetri jarak mata dan kedipan. Terlindungi oleh Row Level Security (RLS) agar pengguna hanya dapat mengakses datanya sendiri.
+      security:
+        - BearerAuth: []
+        - ApiKeyAuth: []
+      parameters:
+        - name: select
+          in: query
+          description: Kolom yang ingin diambil
+          required: false
+          schema:
+            type: string
+            example: "id,distance,is_violation,is_blinking,created_at"
+        - name: order
+          in: query
+          description: Urutan data
+          required: false
+          schema:
+            type: string
+            example: "created_at.desc"
+      responses:
+        '200':
+          description: List data telemetri berhasil didapatkan.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Telemetry'
+        '401':
+          description: Unauthorized. Token JWT hilang atau kadaluwarsa.
+    post:
+      summary: Menyimpan Data Telemetri Baru (Batch Insert)
+      description: Mengirim data telemetri sensor AI (jarak mata, kedipan, status pelanggaran) secara real-time ke cloud.
+      security:
+        - BearerAuth: []
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/TelemetryInsert'
+      responses:
+        '201':
+          description: Data berhasil disimpan ke basis data PostgreSQL.
+        '400':
+          description: Format data salah.
+        '401':
+          description: JWT tidak sah atau tidak memiliki izin akses.
+
+  /rest/v1/user_settings:
+    get:
+      summary: Mengambil Pengaturan Batas Jarak Aman
+      description: Mendapatkan konfigurasi jarak aman personal pengguna.
+      security:
+        - BearerAuth: []
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Data konfigurasi berhasil didapatkan.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserSettings'
+    post:
+      summary: Memperbarui Pengaturan Batas Jarak Aman
+      description: Melakukan UPSERT (Insert/Update) batas jarak aman pengguna ke server cloud.
+      security:
+        - BearerAuth: []
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserSettings'
+      responses:
+        '201':
+          description: Batas jarak aman berhasil diperbarui.
+        '401':
+          description: Sesi tidak valid.
+
+  /rest/v1/news:
+    get:
+      summary: Mendapatkan Berita Edukasi Kesehatan Mata (Public)
+      description: Mengambil seluruh konten artikel edukasi sehat yang bersifat publik (Tanpa perlunya JWT login).
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Daftar berita berhasil dimuat.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/News'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: "Masukkan JWT Access Token yang didapat dari endpoint login. Format: Bearer <token>"
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: apikey
+      description: "Supabase Public API Key yang wajib dikirim di header."
+  schemas:
+    Telemetry:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: f0e9d8c7-b6a5-4321-89ab-cdef01234567
+        user_id:
+          type: string
+          format: uuid
+          example: a9b8c7d6-e2f1-4321-89ab-cdef01234567
+        distance:
+          type: number
+          format: double
+          description: Estimasi jarak mata real-time hasil olah computer vision.
+          example: 32.5
+        is_violation:
+          type: boolean
+          description: Apakah jarak berada di bawah ambang batas aman (< 35cm).
+          example: true
+        is_blinking:
+          type: boolean
+          description: Apakah mata pengguna terdeteksi berkedip saat pengambilan frame.
+          example: false
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-06-06T01:15:30Z"
+    TelemetryInsert:
+      type: object
+      required:
+        - distance
+        - is_violation
+        - is_blinking
+      properties:
+        distance:
+          type: number
+          format: double
+          example: 38.2
+        is_violation:
+          type: boolean
+          example: false
+        is_blinking:
+          type: boolean
+          example: true
+    UserSettings:
+      type: object
+      required:
+        - safe_distance
+      properties:
+        user_id:
+          type: string
+          format: uuid
+          example: a9b8c7d6-e2f1-4321-89ab-cdef01234567
+        safe_distance:
+          type: number
+          format: double
+          description: Ambang batas jarak aman mata ke layar dalam CM.
+          example: 35.0
+        updated_at:
+          type: string
+          format: date-time
+          example: "2026-06-06T01:10:00Z"
+    News:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: b1c2d3e4-f5a6-7890-bcde-f11223344556
+        title:
+          type: string
+          example: "Bahaya Computer Vision Syndrome pada Anak"
+        content:
+          type: string
+          example: "Paparan layar monitor yang terlalu dekat dan lama dapat merusak akomodasi lensa..."
+        category:
+          type: string
+          example: "Edukasi"
+        image_url:
+          type: string
+          example: "https://tkfxqlpmccnpzefywkef.supabase.co/storage/v1/object/public/news/cvs_kids.jpg"
+        source_url:
+          type: string
+          example: "https://www.who.int/news-room"
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-06-06T00:00:00Z"

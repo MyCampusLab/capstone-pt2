@@ -36,7 +36,6 @@ class SupabaseService extends GetxService {
         'is_violation': model.isViolation,
         'is_blinking': model.isBlinking,
         'created_at': model.timestamp.toIso8601String(),
-        'client_timestamp': model.timestamp.toIso8601String(),
       }).toList();
 
       // Upsert berdasarkan primary key 'id' agar idempotent

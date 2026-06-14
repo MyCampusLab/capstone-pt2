@@ -145,22 +145,20 @@ class _LiveVizoRadarState extends State<LiveVizoRadar> with SingleTickerProvider
   }
 
   Widget _buildMascot(bool isViolation) {
-    final hour = DateTime.now().hour;
-    final isLateNight = hour >= 22 || hour < 5;
+    return Obx(() {
+      VizoState mascotState = controller.dynamicMascotState;
 
-    VizoState mascotState = isViolation ? VizoState.worried : VizoState.idle;
-    if (isLateNight && !isViolation) {
-      mascotState = VizoState.sleeping;
-    }
-    if (_isSurprised) {
-      mascotState = VizoState.surprised;
-    }
+      // Animasi kejutan tetap diutamakan untuk interaksi tap
+      if (_isSurprised) {
+        mascotState = VizoState.surprised;
+      }
 
-    return VizoMascot(
-      size: 150,
-      state: mascotState,
-      onTap: _handleTap,
-      lookAt: _lookAtOffset,
-    );
+      return VizoMascot(
+        size: 150,
+        state: mascotState,
+        onTap: _handleTap,
+        lookAt: _lookAtOffset,
+      );
+    });
   }
 }

@@ -23,6 +23,68 @@ class RegisterView extends GetView<AuthController> {
           child: LayoutBuilder(
             builder: (context, constraints) {
               final isSmall = constraints.maxHeight < 700;
+              final isLandscape = constraints.maxWidth > constraints.maxHeight;
+              
+              Widget bodyContent;
+              if (isLandscape) {
+                bodyContent = Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      flex: 4,
+                      child: Hero(
+                        tag: 'vizo_mascot',
+                        child: Obx(() => VizoMascot(
+                          size: 150,
+                          state: controller.registerMascotState.value,
+                          lookAt: controller.registerLookAt.value,
+                        )),
+                      ),
+                    ),
+                    const SizedBox(width: AppDesign.spaceXL),
+                    Expanded(
+                      flex: 6,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const RegisterFormCard(),
+                          const SizedBox(height: AppDesign.space16),
+                          _buildFooter(),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              } else {
+                bodyContent = Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SizedBox(height: isSmall ? AppDesign.spaceL : AppDesign.space32),
+                    
+                    // Hero Mascot with peeking tag
+                    Hero(
+                      tag: 'vizo_mascot',
+                      child: Obx(() => VizoMascot(
+                        size: isSmall ? 100 : 130,
+                        state: controller.registerMascotState.value,
+                        lookAt: controller.registerLookAt.value,
+                      )),
+                    ),
+                    
+                    SizedBox(height: isSmall ? AppDesign.spaceM : AppDesign.space24),
+                    
+                    // Elite Form Card
+                    const RegisterFormCard(),
+                    
+                    const SizedBox(height: AppDesign.space32),
+                    
+                    // Modern Footer
+                    _buildFooter(),
+                    
+                    const SizedBox(height: AppDesign.spaceXL),
+                  ],
+                );
+              }
               
               return SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
@@ -30,33 +92,7 @@ class RegisterView extends GetView<AuthController> {
                   constraints: BoxConstraints(minHeight: constraints.maxHeight),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: AppDesign.spaceL),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        SizedBox(height: isSmall ? AppDesign.spaceL : AppDesign.space32),
-                        
-                        // Hero Mascot with peeking tag
-                        Hero(
-                          tag: 'vizo_mascot',
-                          child: VizoMascot(
-                            size: isSmall ? 100 : 130,
-                            state: VizoState.happy,
-                          ),
-                        ),
-                        
-                        SizedBox(height: isSmall ? AppDesign.spaceM : AppDesign.space24),
-                        
-                        // Elite Form Card
-                        const RegisterFormCard(),
-                        
-                        const SizedBox(height: AppDesign.space32),
-                        
-                        // Modern Footer
-                        _buildFooter(),
-                        
-                        const SizedBox(height: AppDesign.spaceXL),
-                      ],
-                    ),
+                    child: bodyContent,
                   ),
                 ),
               );
@@ -73,7 +109,10 @@ class RegisterView extends GetView<AuthController> {
       child: AuthFooterLink(
         text: "Already a Hero? ",
         linkText: "Back to Quest!",
-        onTap: () => Get.offNamed(Routes.login),
+        onTap: () {
+          controller.clearFields();
+          Get.offNamed(Routes.login);
+        },
       ),
     );
   }

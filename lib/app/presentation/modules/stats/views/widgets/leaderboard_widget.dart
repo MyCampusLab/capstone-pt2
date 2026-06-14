@@ -70,7 +70,9 @@ class LeaderboardWidget extends GetView<StatsController> {
                         backgroundImage: user.avatarUrl != null ? NetworkImage(user.avatarUrl!) : null,
                         child: user.avatarUrl == null
                             ? Text(
-                                user.fullName?.substring(0, 1).toUpperCase() ?? "V",
+                                user.fullName != null && user.fullName!.isNotEmpty
+                                    ? user.fullName!.substring(0, 1).toUpperCase()
+                                    : "V",
                                 style: AppTextStyles.bodyBold.copyWith(fontSize: 12),
                               )
                             : null,

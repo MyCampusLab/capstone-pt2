@@ -16,6 +16,8 @@ class ObservabilityService extends GetxService {
     ),
   );
 
+  final RxList<String> inMemoryLogs = <String>[].obs;
+
   void log({
     required LogSeverity severity,
     required String category,
@@ -25,6 +27,14 @@ class ObservabilityService extends GetxService {
     Object? error,
     StackTrace? stackTrace,
   }) {
+    // Simpan log ke buffer memori untuk ditampilkan di UI log interaktif
+    final timeStr = DateTime.now().toLocal().toString().substring(11, 19);
+    final textLog = '[$timeStr] [${severity.name.toUpperCase()}] [$category] $message';
+    inMemoryLogs.insert(0, textLog);
+    if (inMemoryLogs.length > 150) {
+      inMemoryLogs.removeLast();
+    }
+
     final structuredPayload = {
       'timestamp': DateTime.now().toIso8601String(),
       'severity': severity.name.toUpperCase(),

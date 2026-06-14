@@ -4,6 +4,7 @@ import 'package:visionsafe/app/data/services/supabase_service.dart';
 import 'package:visionsafe/app/data/models/sticker_model.dart';
 import 'package:visionsafe/app/data/repositories/profile_repository.dart';
 import 'package:visionsafe/app/data/models/profile_model.dart';
+import 'package:visionsafe/app/data/services/telemetry_service.dart';
 
 /// StatsController: Logika pengelolaan data statistik dan analitik cloud.
 class StatsController extends GetxController {
@@ -15,18 +16,29 @@ class StatsController extends GetxController {
   final weeklyData = <double>[0, 0, 0, 0, 0, 0, 0].obs;
   final screenTimeHours = 0.0.obs;
   final restTimeHours = 0.0.obs;
+  final totalViolationsCount = 0.obs;
+  final averageDistance = 38.0.obs;
 
   final hourlyViolations = List<double>.filled(24, 0.0).obs;
   final stickers = <StickerModel>[].obs;
   final leaderboard = <ProfileModel>[].obs;
   final isLoading = false.obs;
+  final telemetryService = Get.find<TelemetryService>();
 
   @override
   void onInit() {
     super.onInit();
+    refreshData();
+  }
+
+  Future<void> refreshData() async {
+    isLoading.value = true;
     _loadStickers();
-    fetchCloudAnalytics();
-    fetchLeaderboard();
+    await Future.wait([
+      fetchCloudAnalytics(),
+      fetchLeaderboard(),
+    ]);
+    isLoading.value = false;
   }
 
   Future<void> fetchLeaderboard() async {
@@ -43,18 +55,29 @@ class StatsController extends GetxController {
   }
 
   Future<void> fetchCloudAnalytics() async {
-    isLoading.value = true;
     try {
-      final data = await _supabaseService.getAnalyticsData(limit: 500);
-      if (data.isNotEmpty) {
-        _processHeatmapData(data);
+      // Mengambil data cloud (Limit ditingkatkan ke 1000 untuk cakupan lebih luas)
+      final cloudData = await _supabaseService.getAnalyticsData(limit: 1000);
+      
+      // MENGGABUNGKAN DATA: Cloud + Local Hive (Data yang belum tersinkron)
+      final localLogs = telemetryService.getAllLocalLogs();
+      final List<Map<String, dynamic>> combinedLogs = List.from(cloudData);
+      
+      for (var log in localLogs) {
+        combinedLogs.add({
+          'created_at': log.timestamp.toIso8601String(),
+          'is_violation': log.isViolation,
+          'distance': log.distance,
+        });
+      }
+
+      if (combinedLogs.isNotEmpty) {
+        _processHeatmapData(combinedLogs);
       } else {
         _resetToEmptyState();
       }
     } catch (e) {
       _resetToEmptyState();
-    } finally {
-      isLoading.value = false;
     }
   }
 
@@ -62,6 +85,8 @@ class StatsController extends GetxController {
     healthScore.value = 100;
     screenTimeHours.value = 0.0;
     restTimeHours.value = 0.0;
+    totalViolationsCount.value = 0;
+    averageDistance.value = 38.0;
     hourlyViolations.value = List.filled(24, 0.0);
   }
 
@@ -74,16 +99,28 @@ class StatsController extends GetxController {
     }
 
     int totalViolations = 0;
+    double sumDistance = 0.0;
+    int distanceCount = 0;
     
     for (var log in logs) {
       try {
         final createdAtStr = log['created_at']?.toString();
         if (createdAtStr == null) continue;
         
-        final createdAt = DateTime.parse(createdAtStr);
+        // Pastikan konversi ke Local Time untuk Heatmap yang akurat bagi user
+        final createdAt = DateTime.parse(createdAtStr).toLocal();
         final isViolation = log['is_violation'] as bool? ?? false;
         
         if (isViolation) totalViolations++;
+        
+        final distVal = log['distance'];
+        if (distVal != null) {
+          final double dist = (distVal as num).toDouble();
+          if (dist > 0) {
+            sumDistance += dist;
+            distanceCount++;
+          }
+        }
         
         final hour = createdAt.hour;
         hourlyMap[hour]?.add(isViolation);
@@ -91,6 +128,9 @@ class StatsController extends GetxController {
         continue;
       }
     }
+
+    totalViolationsCount.value = totalViolations;
+    averageDistance.value = distanceCount > 0 ? (sumDistance / distanceCount) : 38.0;
 
     final int logCount = logs.length;
     if (logCount > 0) {
@@ -100,8 +140,11 @@ class StatsController extends GetxController {
           ? 100 
           : rawScore.clamp(0, 100).toInt();
       
-      final double rawScreenTime = (logCount * 5) / 3600;
+      // RUMUS DUNIA NYATA: 1 Log = 1 Detik (Sesuai Native Sampling Rate terbaru)
+      final double rawScreenTime = logCount / 3600;
       screenTimeHours.value = rawScreenTime.isNaN || rawScreenTime.isInfinite ? 0.0 : rawScreenTime;
+      
+      // Rasio Istirahat Ideal: 20% dari total screen time (Standar Medis 20-20-20)
       restTimeHours.value = screenTimeHours.value * 0.2;
     }
 

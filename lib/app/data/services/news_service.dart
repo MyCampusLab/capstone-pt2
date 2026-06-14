@@ -59,9 +59,9 @@ class NewsService extends GetxService {
   }
 
   Future<void> fetchNews({bool force = false}) async {
-    // Throttling: fetch maximum once per 10 minutes unless forced
+    // Throttling: fetch maximum once per 1 minutes unless forced
     if (!force && _lastFetchTime != null && 
-        DateTime.now().difference(_lastFetchTime!) < const Duration(minutes: 10)) {
+        DateTime.now().difference(_lastFetchTime!) < const Duration(minutes: 1)) {
       _logger.d("Fetch berita dilewati (throttled).");
       return;
     }
@@ -78,7 +78,7 @@ class NewsService extends GetxService {
         title: 'Mengenal Aturan 20-20-20 untuk Kesehatan Mata',
         description: 'Setiap 20 menit menatap layar, lihatlah objek sejauh 20 kaki (6 meter) selama 20 detik. Teknik ini sangat efektif mengurangi ketegangan mata digital.',
         category: 'TIPS HERO',
-        url: 'https://visionsafe.id/edu/20-20-20',
+        url: 'https://www.aao.org/eye-health/tips-prevention/computer-usage',
         publishedAt: DateTime.now(),
         sourceName: 'VisionSafe HQ',
       ),
@@ -87,7 +87,7 @@ class NewsService extends GetxService {
         title: 'Jarak Aman Mata: Mengapa 30cm Sangat Penting?',
         description: 'Menjaga jarak minimal 30cm dari layar membantu otot mata bekerja lebih rileks dan mencegah perkembangan miopi (mata minus) secara dini.',
         category: 'EDUKASI',
-        url: 'https://visionsafe.id/edu/safe-distance',
+        url: 'https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6020759/',
         publishedAt: DateTime.now().subtract(const Duration(hours: 1)),
         sourceName: 'VisionSafe HQ',
       ),
@@ -96,7 +96,7 @@ class NewsService extends GetxService {
         title: 'Pentingnya Kedipan Mata Saat Menatap Layar',
         description: 'Saat serius menatap layar, frekuensi berkedip manusia turun hingga 60%. Ini menyebabkan mata kering dan iritasi. Hero, jangan lupa berkedip!',
         category: 'EDUKASI',
-        url: 'https://visionsafe.id/edu/blink-importance',
+        url: 'https://www.healthline.com/health/eye-health/how-often-do-you-blink',
         publishedAt: DateTime.now().subtract(const Duration(hours: 2)),
         sourceName: 'VisionSafe HQ',
       ),
@@ -130,6 +130,46 @@ class NewsService extends GetxService {
       isOffline.value = true;
     }
 
+    // 1.5 Fetch from VisionSafe Big Data Pipeline (Firebase Firestore)
+    try {
+  
+      const projectId = 'bigdata-visionsafe';
+      final firebaseUrl = 'https://firestore.googleapis.com/v1/projects/$projectId/databases/(default)/documents/visionsafe_knowledge?pageSize=1000';
+      
+      final res = await _dio.get(firebaseUrl);
+      if (res.statusCode == 200 && res.data != null) {
+        final documents = res.data['documents'] as List?;
+        if (documents != null) {
+          for (final doc in documents) {
+            final fields = doc['fields'];
+            if (fields == null) continue;
+            
+            final title = fields['title']?['stringValue'] ?? '';
+            final url = fields['url']?['stringValue'] ?? '';
+            final content = fields['full_content']?['stringValue'] ?? '';
+            final source = fields['source']?['stringValue'] ?? 'VisionSafe Big Data';
+            final publishedStr = fields['published_raw']?['stringValue'];
+            
+            final news = NewsModel(
+              id: doc['name'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
+              title: title,
+              description: content,
+              category: 'BIG DATA',
+              url: url,
+              publishedAt: publishedStr != null ? DateTime.tryParse(publishedStr) ?? DateTime.now() : DateTime.now(),
+              sourceName: source,
+            );
+            
+            if (titles.add(news.title.toLowerCase().trim()) && urls.add(news.url.trim())) {
+              allFetched.add(news);
+            }
+          }
+        }
+      }
+    } catch (e) {
+      _logger.w("Firebase Big Data fetch failed: $e");
+    }
+
     // 2. Fetch from RSS Feeds in parallel with higher resilience
     final List<Future<void>> rssFutures = _sources.map((src) async {
       try {
@@ -153,8 +193,8 @@ class NewsService extends GetxService {
       // Sort: newest first
       allFetched.sort((a, b) => b.publishedAt.compareTo(a.publishedAt));
       
-      // Limit total stored list to 50 items to keep local storage lightweight
-      final finalArticles = allFetched.take(50).toList();
+      // No limit on stored list to demonstrate limitless Big Data capacity
+      final finalArticles = allFetched;
       newsList.assignAll(finalArticles);
 
       // Save to Hive cache

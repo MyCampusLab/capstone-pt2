@@ -1,0 +1,14 @@
+fastapi
+uvicorn
+pydantic
+tinydb
+pandas
+matplotlib
+python-jose[cryptography]
+passlib[bcrypt]
+requests
+opencv-python-headless
+torch
+torchvision
+APScheduler
+python-multipart

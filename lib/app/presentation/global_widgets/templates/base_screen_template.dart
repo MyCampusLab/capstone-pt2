@@ -14,6 +14,8 @@ class BaseScreenTemplate extends StatelessWidget {
   final ScrollPhysics? physics;
   final List<Widget>? stackLayers;
   final double bottomPadding;
+  final double? topPadding;
+  final Future<void> Function()? onRefresh;
 
   const BaseScreenTemplate({
     super.key,
@@ -26,10 +28,35 @@ class BaseScreenTemplate extends StatelessWidget {
     this.physics = const BouncingScrollPhysics(),
     this.stackLayers,
     this.bottomPadding = 180.0,
+    this.topPadding,
+    this.onRefresh,
   });
 
   @override
   Widget build(BuildContext context) {
+    Widget content = SingleChildScrollView(
+      physics: physics,
+      clipBehavior: Clip.none,
+      child: SafeArea(
+        top: appBar == null, // Safe area only if no app bar
+        bottom: false,
+        child: Padding(
+          padding: (usePadding ? AppDesign.screenPadding : EdgeInsets.zero).copyWith(
+            top: topPadding ?? (appBar != null ? AppDesign.space16 : AppDesign.spaceM),
+            bottom: bottomPadding,
+          ),
+          child: child,
+        ),
+      ),
+    );
+
+    if (onRefresh != null) {
+      content = RefreshIndicator(
+        onRefresh: onRefresh!,
+        child: content,
+      );
+    }
+
     return VImmersiveBackground(
       child: Scaffold(
         backgroundColor: Colors.transparent,
@@ -38,21 +65,7 @@ class BaseScreenTemplate extends StatelessWidget {
         extendBody: true,
         body: Stack(
           children: [
-            SingleChildScrollView(
-              physics: physics,
-              clipBehavior: Clip.none,
-              child: SafeArea(
-                top: appBar == null, // Safe area only if no app bar
-                bottom: false,
-                child: Padding(
-                  padding: (usePadding ? AppDesign.screenPadding : EdgeInsets.zero).copyWith(
-                    top: appBar != null ? AppDesign.space16 : AppDesign.spaceM,
-                    bottom: bottomPadding,
-                  ),
-                  child: child,
-                ),
-              ),
-            ),
+            content,
             if (stackLayers != null) ...stackLayers!,
           ],
         ),

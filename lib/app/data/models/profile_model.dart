@@ -60,4 +60,30 @@ class ProfileModel {
   String toJson() => json.encode(toMap());
 
   factory ProfileModel.fromJson(String source) => ProfileModel.fromMap(json.decode(source));
+
+  ProfileModel copyWith({
+    String? id,
+    String? fullName,
+    String? avatarUrl,
+    int? xp,
+    int? level,
+    int? totalFocusTimeSeconds,
+    int? totalViolations,
+    int? streakDays,
+    String? mascotState,
+    DateTime? lastActiveAt,
+  }) {
+    return ProfileModel(
+      id: id ?? this.id,
+      fullName: fullName ?? this.fullName,
+      avatarUrl: avatarUrl ?? this.avatarUrl,
+      xp: xp ?? this.xp,
+      level: level ?? this.level,
+      totalFocusTimeSeconds: totalFocusTimeSeconds ?? this.totalFocusTimeSeconds,
+      totalViolations: totalViolations ?? this.totalViolations,
+      streakDays: streakDays ?? this.streakDays,
+      mascotState: mascotState ?? this.mascotState,
+      lastActiveAt: lastActiveAt ?? this.lastActiveAt,
+    );
+  }
 }

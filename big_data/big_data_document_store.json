@@ -1,0 +1,109 @@
+{
+    "database_name": "visionsafe_bigdata_nosql",
+    "collection_name": "eye_health_literatures",
+    "total_documents": 3,
+    "documents": [
+        {
+            "_id": "PUBMED-DOC-1000",
+            "metadata": {
+                "source": "NCBI PubMed",
+                "original_link": "https://pubmed.ncbi.nlm.nih.gov/34215162/",
+                "published_at": "Mon, 12 Jan 2026 08:00:00 GMT",
+                "crawled_at": "2026-06-06T01:25:00Z"
+            },
+            "content": {
+                "title": "Computer Vision Syndrome and Associated Risk Factors among Computer Users.",
+                "abstract_snippet": "Computer vision syndrome (CVS) is a group of eye and vision-related problems that result from prolonged computer, tablet, e-reader and smart phone use. Eye strain, dry eyes, and headaches are major risk factors."
+            },
+            "preprocessing": {
+                "cleaned_body": "computer vision syndrome associated risk factors among computer users computer vision syndrome cvs group eye visionrelated problems result prolonged computer tablet ereader smart phone use eye strain dry eyes headaches major risk factors",
+                "tokens_count": 33,
+                "keywords": [
+                    "users",
+                    "smart",
+                    "dry",
+                    "among",
+                    "tablet",
+                    "phone",
+                    "headaches",
+                    "cvs",
+                    "major",
+                    "prolonged",
+                    "strain",
+                    "group",
+                    "visionrelated",
+                    "ereader",
+                    "risk"
+                ]
+            }
+        },
+        {
+            "_id": "PUBMED-DOC-1001",
+            "metadata": {
+                "source": "NCBI PubMed",
+                "original_link": "https://pubmed.ncbi.nlm.nih.gov/35112281/",
+                "published_at": "Wed, 18 Feb 2026 08:00:00 GMT",
+                "crawled_at": "2026-06-06T01:25:00Z"
+            },
+            "content": {
+                "title": "Prevalence of Myopia and Screen Time Exposure in Young Children: A Systematic Review.",
+                "abstract_snippet": "Increased digital screen exposure is significantly associated with higher odds of myopia, particularly in children maintaining close viewing distances of less than thirty-five centimeters."
+            },
+            "preprocessing": {
+                "cleaned_body": "prevalence myopia screen time exposure young children systematic review increased digital screen exposure significantly associated higher odds myopia particularly children maintaining close viewing distances less thirtyfive centimeters",
+                "tokens_count": 27,
+                "keywords": [
+                    "prevalence",
+                    "maintaining",
+                    "distances",
+                    "increased",
+                    "myopia",
+                    "screen",
+                    "systematic",
+                    "odds",
+                    "centimeters",
+                    "less",
+                    "significantly",
+                    "young",
+                    "thirtyfive",
+                    "children",
+                    "close"
+                ]
+            }
+        },
+        {
+            "_id": "PUBMED-DOC-1002",
+            "metadata": {
+                "source": "NCBI PubMed",
+                "original_link": "https://pubmed.ncbi.nlm.nih.gov/36881920/",
+                "published_at": "Fri, 20 Mar 2026 08:00:00 GMT",
+                "crawled_at": "2026-06-06T01:25:00Z"
+            },
+            "content": {
+                "title": "Digital Eye Strain: Preventive Interventions and Eye Exercises Effectiveness.",
+                "abstract_snippet": "The 20-20-20 rule and regular blinking exercises substantially decrease dry eye symptoms and visual fatigue during continuous smart device operations."
+            },
+            "preprocessing": {
+                "cleaned_body": "digital eye strain preventive interventions eye exercises effectiveness rule regular blinking exercises substantially decrease dry eye symptoms visual fatigue continuous smart device operations",
+                "tokens_count": 23,
+                "keywords": [
+                    "operations",
+                    "smart",
+                    "dry",
+                    "continuous",
+                    "preventive",
+                    "fatigue",
+                    "strain",
+                    "substantially",
+                    "rule",
+                    "regular",
+                    "blinking",
+                    "effectiveness",
+                    "exercises",
+                    "device",
+                    "digital"
+                ]
+            }
+        }
+    ]
+}

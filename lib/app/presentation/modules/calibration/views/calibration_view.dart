@@ -6,6 +6,7 @@ import 'package:visionsafe/app/core/values/app_text_styles.dart';
 import 'package:visionsafe/app/presentation/global_widgets/atoms/v_button.dart';
 import 'package:visionsafe/app/presentation/global_widgets/molecules/vizo_mascot.dart';
 import '../controllers/calibration_controller.dart';
+import 'widgets/scan_target_overlay.dart';
 
 /// View Kalibrasi Wajah Versi Pro dengan Live Camera Feed.
 class CalibrationView extends GetView<CalibrationController> {
@@ -22,6 +23,9 @@ class CalibrationView extends GetView<CalibrationController> {
           
           // 2. UI Overlay (Glassmorphism & Gradient)
           _buildUiOverlay(),
+          
+          // 2b. Retro Scanning Bounding Box Frame (Interactive Visual Target)
+          Obx(() => ScanTargetOverlay(distance: controller.currentDistance.value)),
           
           // 3. Distance Meter & Info
           _buildDistanceMeter(),

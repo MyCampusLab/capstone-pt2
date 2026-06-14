@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:visionsafe/app/data/services/reward_service.dart';
 import 'package:hive/hive.dart';
@@ -11,6 +12,9 @@ class EyeExerciseController extends GetxController {
   final timeLeft = 10.obs;
   final isRunning = false.obs;
   Timer? _timer;
+
+  @visibleForTesting
+  Duration tickDuration = const Duration(seconds: 1);
 
   final List<Map<String, String>> steps = [
     {
@@ -36,6 +40,7 @@ class EyeExerciseController extends GetxController {
   ];
 
   void startExercise() {
+    currentStep.value = 0;
     isRunning.value = true;
     _startTimer();
   }
@@ -43,13 +48,17 @@ class EyeExerciseController extends GetxController {
   void _startTimer() {
     timeLeft.value = 10;
     _timer?.cancel();
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (timeLeft.value > 0) {
-        timeLeft.value--;
-      } else {
-        _nextStep();
-      }
+    _timer = Timer.periodic(tickDuration, (timer) {
+      tick();
     });
+  }
+
+  void tick() {
+    if (timeLeft.value > 0) {
+      timeLeft.value--;
+    } else {
+      _nextStep();
+    }
   }
 
   void _nextStep() {

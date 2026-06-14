@@ -102,9 +102,19 @@ class VisionAnalyzer(private val context: Context) {
             if (lastDistance == 0.0) lastDistance = rawDistance
             lastDistance = (rawDistance * SMOOTHING_FACTOR) + (lastDistance * (1.0 - SMOOTHING_FACTOR))
             
-            // 5. Deteksi Kedipan (Blink) via Blendshapes
-            // Menggunakan iterasi eksplisit untuk menghindari masalah resolusi referensi Kotlin
+            // 5. Deteksi Kedipan & Pergerakan Mata via Blendshapes
             var isBlinking = false
+            var eyeLookInLeft = 0f
+            var eyeLookOutLeft = 0f
+            var eyeLookInRight = 0f
+            var eyeLookOutRight = 0f
+            var eyeLookUpLeft = 0f
+            var eyeLookUpRight = 0f
+            var eyeLookDownLeft = 0f
+            var eyeLookDownRight = 0f
+            var eyeSquintLeft = 0f
+            var eyeSquintRight = 0f
+
             val blendshapesOptional = result.faceBlendshapes()
             if (blendshapesOptional.isPresent) {
                 val blendshapesList = blendshapesOptional.get()
@@ -114,23 +124,67 @@ class VisionAnalyzer(private val context: Context) {
                         for (category in firstFaceCategories) {
                             val name = category.categoryName()
                             val score = category.score()
-                            if (name == "eyeBlinkLeft" || name == "eyeBlinkRight") {
-                                if (score > 0.35f) { // Sensitivitas sedikit ditingkatkan
-                                    isBlinking = true
-                                    break
-                                }
+                            
+                            when (name) {
+                                "eyeBlinkLeft" -> { if (score > 0.35f) isBlinking = true }
+                                "eyeBlinkRight" -> { if (score > 0.35f) isBlinking = true }
+                                "eyeLookInLeft" -> eyeLookInLeft = score
+                                "eyeLookOutLeft" -> eyeLookOutLeft = score
+                                "eyeLookInRight" -> eyeLookInRight = score
+                                "eyeLookOutRight" -> eyeLookOutRight = score
+                                "eyeLookUpLeft" -> eyeLookUpLeft = score
+                                "eyeLookUpRight" -> eyeLookUpRight = score
+                                "eyeLookDownLeft" -> eyeLookDownLeft = score
+                                "eyeLookDownRight" -> eyeLookDownRight = score
+                                "eyeSquintLeft" -> eyeSquintLeft = score
+                                "eyeSquintRight" -> eyeSquintRight = score
                             }
                         }
                     }
                 }
             }
+
+            // Kalkulasi skor arah lirikan mata
+            val lookLeft = (eyeLookOutLeft + eyeLookInRight) / 2f
+            val lookRight = (eyeLookInLeft + eyeLookOutRight) / 2f
+            val lookUp = (eyeLookUpLeft + eyeLookUpRight) / 2f
+            val lookDown = (eyeLookDownLeft + eyeLookDownRight) / 2f
+            val squint = (eyeSquintLeft + eyeSquintRight) / 2f
+
+            // Klasifikasi arah dominan lirikan
+            var eyeMovement = "center"
+            var maxScore = 0.20f // Batas minimal 20% keyakinan
             
-            return AnalysisResult(lastDistance, isBlinking)
+            if (lookLeft > maxScore) {
+                eyeMovement = "left"
+                maxScore = lookLeft
+            }
+            if (lookRight > maxScore) {
+                eyeMovement = "right"
+                maxScore = lookRight
+            }
+            if (lookUp > maxScore) {
+                eyeMovement = "up"
+                maxScore = lookUp
+            }
+            if (lookDown > maxScore) {
+                eyeMovement = "down"
+                maxScore = lookDown
+            }
+
+            val isSquinting = squint > 0.35f
+
+            return AnalysisResult(lastDistance, isBlinking, eyeMovement, isSquinting)
         }
         return null
     }
 
-    data class AnalysisResult(val distance: Double, val isBlinking: Boolean)
+    data class AnalysisResult(
+        val distance: Double, 
+        val isBlinking: Boolean,
+        val eyeMovement: String,
+        val isSquinting: Boolean
+    )
 
     private fun ImageProxy.toBitmapOptimized(): Bitmap {
         val buffer = planes[0].buffer

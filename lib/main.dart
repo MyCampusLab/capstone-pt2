@@ -22,6 +22,15 @@ void main() async {
   
   // 0. Crash Reporting Preparation (Phase 5)
   FlutterError.onError = (FlutterErrorDetails details) {
+    // Silence repetitive network noise in logs
+    final exceptionStr = details.exception.toString();
+    if (exceptionStr.contains('SocketException') || 
+        exceptionStr.contains('AuthRetryableFetchException') ||
+        exceptionStr.contains('Failed host lookup')) {
+      debugPrint('Network: Connection currently unavailable.');
+      return;
+    }
+
     FlutterError.presentError(details);
     ErrorLogger.recordError(details.exception, details.stack);
   };
@@ -30,6 +39,7 @@ void main() async {
   await Supabase.initialize(
     url: 'https://tkfxqlpmccnpzefywkef.supabase.co',
     anonKey: 'sb_publishable_CA0kVCgcofJgmibNNW6-9w_osXCd4Cx', 
+    debug: false, // Turn off excessive Supabase logging
   );
 
   // 2. Inisialisasi Hive (Pondasi Local Storage)

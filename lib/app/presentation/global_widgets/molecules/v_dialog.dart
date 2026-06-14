@@ -22,9 +22,11 @@ class VDialog {
       Center(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 32),
-          child: VCard(
-            padding: 24,
-            child: Column(
+          child: Material(
+            color: Colors.transparent,
+            child: VCard(
+              padding: 24,
+              child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
@@ -54,7 +56,10 @@ class VDialog {
                       height: 1.5,
                     ),
                   ),
-                ?content,
+                if (content != null) ...[
+                  const SizedBox(height: 16),
+                  content,
+                ],
                 const SizedBox(height: 24),
                 Row(
                   children: [
@@ -91,6 +96,7 @@ class VDialog {
                 ),
               ],
             ),
+          ),
           ),
         ),
       ),

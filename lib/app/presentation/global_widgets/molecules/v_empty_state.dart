@@ -3,6 +3,7 @@ import 'package:visionsafe/app/core/values/app_colors.dart';
 import 'package:visionsafe/app/core/values/app_text_styles.dart';
 import 'package:visionsafe/app/core/values/app_design.dart';
 import 'package:visionsafe/app/presentation/global_widgets/molecules/vizo_mascot.dart';
+import 'package:visionsafe/app/presentation/global_widgets/molecules/vizo_news_mascot.dart';
 import 'package:visionsafe/app/presentation/global_widgets/atoms/v_button.dart';
 
 class VEmptyState extends StatelessWidget {
@@ -11,6 +12,7 @@ class VEmptyState extends StatelessWidget {
   final VizoState mascotState;
   final String? actionLabel;
   final VoidCallback? onActionPressed;
+  final bool useNewsMascot;
 
   const VEmptyState({
     super.key,
@@ -19,6 +21,7 @@ class VEmptyState extends StatelessWidget {
     this.mascotState = VizoState.sleeping,
     this.actionLabel,
     this.onActionPressed,
+    this.useNewsMascot = false,
   });
 
   @override
@@ -39,10 +42,9 @@ class VEmptyState extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          VizoMascot(
-            size: 110,
-            state: mascotState,
-          ),
+          useNewsMascot 
+              ? VizoNewsMascot(size: 110, state: mascotState) 
+              : VizoMascot(size: 110, state: mascotState),
           const SizedBox(height: AppDesign.spaceM),
           Text(
             title.toUpperCase(),

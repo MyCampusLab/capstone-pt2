@@ -1,4 +1,5 @@
 import 'package:camera/camera.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:logger/logger.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -21,6 +22,9 @@ class CalibrationController extends GetxController {
   final isSaving = false.obs;
   
   CameraController? cameraController;
+  
+  // Haptic feedback state tracker to avoid continuous vibrations
+  String _lastHapticState = 'idle';
 
   @override
   void onInit() {
@@ -30,6 +34,21 @@ class CalibrationController extends GetxController {
     
     ever(telemetryService.currentDistance, (double distance) {
       currentDistance.value = distance;
+      
+      // Trigger tactile haptic feedback on state changes
+      if (distance >= 30.0) {
+        if (_lastHapticState != 'ideal') {
+          HapticFeedback.lightImpact();
+          _lastHapticState = 'ideal';
+        }
+      } else if (distance > 0.0 && distance < 30.0) {
+        if (_lastHapticState != 'tooClose') {
+          HapticFeedback.vibrate();
+          _lastHapticState = 'tooClose';
+        }
+      } else {
+        _lastHapticState = 'idle';
+      }
     });
   }
 
@@ -41,7 +60,11 @@ class CalibrationController extends GetxController {
       final ctrl = CameraController(frontCamera, ResolutionPreset.medium, enableAudio: false);
       cameraController = ctrl;
       await ctrl.initialize();
-      if (!isClosed) update(); // Refresh UI only if active
+      if (isClosed) {
+        await ctrl.dispose();
+        return;
+      }
+      update(); // Refresh UI only if active
     } catch (e) {
       _logger.e("Gagal inisialisasi kamera preview: $e");
     }

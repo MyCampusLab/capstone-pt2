@@ -50,6 +50,14 @@ This project is a high-stakes collaboration between top-tier engineers:
 
 ---
 
+## 🌐 Live API Documentation & Testing
+Untuk mempermudah integrasi dan pengujian oleh dosen penguji atau pengembang lain, dokumentasi API VisionSafe telah dipublikasikan secara interaktif dan siap pakai:
+- **Interactive Swagger UI (FastAPI-style Playground):** [visionsafe-api.surge.sh](https://visionsafe-api.surge.sh)
+- **Postman Collection:** File spesifikasi Postman dapat diunduh dari direktori [api_documentation/visionsafe_postman_col.json](./api_documentation/visionsafe_postman_col.json) untuk langsung diimpor ke Postman.
+- **Automated API Tester:** Skrip pengujian otomatis berbasis Python dapat diakses di [scratch/test_api_supabase.py](./scratch/test_api_supabase.py) untuk memverifikasi integritas endpoint live secara real-time.
+
+---
+
 ## 📄 LICENSE
 This project is licensed under the **MIT License** - see the LICENSE file for details.
 

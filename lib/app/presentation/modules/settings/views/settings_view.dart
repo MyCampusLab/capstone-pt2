@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:visionsafe/app/core/values/app_colors.dart';
-import 'package:visionsafe/app/core/values/app_text_styles.dart';
 import 'package:visionsafe/app/data/services/config_service.dart';
 import 'package:visionsafe/app/data/services/auth_service.dart';
 import 'package:visionsafe/app/routes/app_pages.dart';
@@ -11,6 +10,7 @@ import 'dialogs/edit_profile_dialog.dart';
 import 'dialogs/change_password_dialog.dart';
 import 'dialogs/distance_setter_dialog.dart';
 import 'package:visionsafe/app/presentation/global_widgets/templates/base_screen_template.dart';
+import 'package:visionsafe/app/presentation/global_widgets/molecules/v_app_header.dart';
 
 /// View Pengaturan Utama (Elite Professional Version).
 /// File length strictly < 200 lines.
@@ -23,13 +23,7 @@ class SettingsView extends StatelessWidget {
     final auth = Get.find<AuthService>();
 
     return BaseScreenTemplate(
-      appBar: AppBar(
-        title: Text('PENGATURAN', style: AppTextStyles.heading2.copyWith(color: AppColors.primaryDark)),
-        centerTitle: true,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        automaticallyImplyLeading: false,
-      ),
+      appBar: const VAppHeader(title: 'PENGATURAN'),
       bottomPadding: 140,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -78,6 +72,7 @@ class SettingsView extends StatelessWidget {
       ),
     );
   }
+
 
   void _handleLogout(AuthService auth) {
     Get.dialog(

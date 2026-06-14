@@ -1,0 +1,376 @@
+{
+	"info": {
+		"_postman_id": "8b5c9284-a167-4221-a3f8-8ef72a71d49e",
+		"name": "VisionSafe - Eye Guardian API Collection",
+		"description": "Koleksi Postman untuk pengujian RESTful API VisionSafe (Supabase Backend Engine). Berisi endpoint Autentikasi, Profil Pengguna, Telemetri Real-time, dan Berita Sehat.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "Registrasi Akun Baru",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"hero@visionsafe.id\",\n    \"password\": \"SuperStrong123!\"\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/auth/v1/signup",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"auth",
+								"v1",
+								"signup"
+							]
+						},
+						"description": "Mendaftarkan email dan password baru ke Supabase Auth."
+					},
+					"response": []
+				},
+				{
+					"name": "Login Akun (Dapatkan JWT)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData.access_token) {",
+									"    pm.environment.set(\"JWT_TOKEN\", jsonData.access_token);",
+									"    pm.environment.set(\"REFRESH_TOKEN\", jsonData.refresh_token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"hero@visionsafe.id\",\n    \"password\": \"SuperStrong123!\"\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/auth/v1/token?grant_type=password",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"auth",
+								"v1",
+								"token"
+							],
+							"query": [
+								{
+									"key": "grant_type",
+									"value": "password"
+								}
+							]
+						},
+						"description": "Mengirim kredensial dan mendapatkan JWT Access Token."
+					},
+					"response": []
+				},
+				{
+					"name": "Logout Akun",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{JWT_TOKEN}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{BASE_URL}}/auth/v1/logout",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"auth",
+								"v1",
+								"logout"
+							]
+						},
+						"description": "Menghapus sesi login di sisi server cloud."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Telemetry & Eye Distance Logs",
+			"item": [
+				{
+					"name": "Simpan Log Telemetri Baru (Batch Insert)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{JWT_TOKEN}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "apikey",
+								"value": "{{SUPABASE_ANON_KEY}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "[\n    {\n        \"distance\": 34.5,\n        \"is_violation\": true,\n        \"is_blinking\": false\n    },\n    {\n        \"distance\": 39.1,\n        \"is_violation\": false,\n        \"is_blinking\": true\n    }\n]"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/rest/v1/telemetry",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"rest",
+								"v1",
+								"telemetry"
+							]
+						},
+						"description": "Mengirim kumpulan data sensor pengawasan mata (jarak dalam cm dan status kedipan) ke database cloud."
+					},
+					"response": []
+				},
+				{
+					"name": "Ambil Histori Telemetri",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{JWT_TOKEN}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "apikey",
+								"value": "{{SUPABASE_ANON_KEY}}"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/rest/v1/telemetry?select=id,distance,is_violation,is_blinking,created_at&order=created_at.desc",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"rest",
+								"v1",
+								"telemetry"
+							],
+							"query": [
+								{
+									"key": "select",
+									"value": "id,distance,is_violation,is_blinking,created_at"
+								},
+								{
+									"key": "order",
+									"value": "created_at.desc"
+								}
+							]
+						},
+						"description": "Mengambil log history mata milik user bersangkutan (Terlindungi RLS PostgreSQL)."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "User Settings",
+			"item": [
+				{
+					"name": "Dapatkan Konfigurasi Batas Jarak",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{JWT_TOKEN}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "apikey",
+								"value": "{{SUPABASE_ANON_KEY}}"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/rest/v1/user_settings",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"rest",
+								"v1",
+								"user_settings"
+							]
+						},
+						"description": "Mengambil ambang batas jarak aman (safe threshold) milik user."
+					},
+					"response": []
+				},
+				{
+					"name": "Simpan/Update Batas Jarak",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{JWT_TOKEN}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "apikey",
+								"value": "{{SUPABASE_ANON_KEY}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Prefer",
+								"value": "resolution=merge-duplicates"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"safe_distance\": 35.0\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/rest/v1/user_settings",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"rest",
+								"v1",
+								"user_settings"
+							]
+						},
+						"description": "Memperbarui batas jarak aman yang diinginkan user."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Educational News (Public)",
+			"item": [
+				{
+					"name": "Ambil Daftar Berita",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "apikey",
+								"value": "{{SUPABASE_ANON_KEY}}"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/rest/v1/news",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"rest",
+								"v1",
+								"news"
+							]
+						},
+						"description": "Mengambil daftar artikel kesehatan mata secara publik tanpa perlu melampirkan JWT token login."
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "BASE_URL",
+			"value": "https://visionsafe-api.supabase.co",
+			"type": "string"
+		},
+		{
+			"key": "SUPABASE_ANON_KEY",
+			"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsImF0dCI6ImFub24iLCJpYXQiOjE3MDMyODAwMDAsImV4cCI6MjAxODg1NjAwMH0...",
+			"type": "string"
+		},
+		{
+			"key": "JWT_TOKEN",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "REFRESH_TOKEN",
+			"value": "",
+			"type": "string"
+		}
+	]
+}

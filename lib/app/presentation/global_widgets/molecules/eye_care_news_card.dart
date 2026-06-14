@@ -33,6 +33,14 @@ class EyeCareNewsCard extends StatelessWidget {
         badgeColor = Colors.indigo.withValues(alpha: 0.08);
         badgeTextColor = Colors.indigo.shade700;
         break;
+      case 'BIG DATA':
+        badgeColor = const Color(0xFFFF3366).withValues(alpha: 0.1); // Pinkish Red for Big Data
+        badgeTextColor = const Color(0xFFD80032);
+        break;
+      case 'TIPS HERO':
+        badgeColor = const Color(0xFFFFD700).withValues(alpha: 0.15); // Gold for Hero Tips
+        badgeTextColor = const Color(0xFFB8860B);
+        break;
       default:
         badgeColor = Colors.teal.withValues(alpha: 0.08);
         badgeTextColor = Colors.teal.shade700;
@@ -65,30 +73,40 @@ class EyeCareNewsCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: badgeColor,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        news.category.toUpperCase(),
-                        style: TextStyle(
-                          color: badgeTextColor,
-                          fontSize: 9,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 0.5,
+                    Flexible(
+                      flex: 1,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: badgeColor,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          news.category.toUpperCase(),
+                          style: TextStyle(
+                            color: badgeTextColor,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0.5,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ),
-                    const Spacer(),
-                    Text(
-                      "${news.sourceName} • $dateStr",
-                      style: AppTextStyles.caption.copyWith(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.primaryDark.withValues(alpha: 0.5),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      flex: 2,
+                      child: Text(
+                        "${news.sourceName} • $dateStr",
+                        style: AppTextStyles.caption.copyWith(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.primaryDark.withValues(alpha: 0.5),
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.right,
                       ),
                     ),
                   ],

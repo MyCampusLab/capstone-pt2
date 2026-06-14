@@ -25,6 +25,68 @@ class LoginView extends GetView<AuthController> {
           child: LayoutBuilder(
             builder: (context, constraints) {
               final isSmall = constraints.maxHeight < 700;
+              final isLandscape = constraints.maxWidth > constraints.maxHeight;
+              
+              Widget bodyContent;
+              if (isLandscape) {
+                bodyContent = Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      flex: 4,
+                      child: Hero(
+                        tag: 'vizo_mascot',
+                        child: Obx(() => VizoMascot(
+                          size: 180,
+                          state: controller.loginMascotState.value,
+                          lookAt: controller.loginLookAt.value,
+                        )),
+                      ),
+                    ),
+                    const SizedBox(width: AppDesign.spaceXL),
+                    Expanded(
+                      flex: 6,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const LoginFormCard(),
+                          const SizedBox(height: AppDesign.space16),
+                          _buildFooter(),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              } else {
+                bodyContent = Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SizedBox(height: isSmall ? AppDesign.spaceXL : AppDesign.space64),
+                    
+                    // Hero Mascot with floating animation
+                    Hero(
+                      tag: 'vizo_mascot',
+                      child: Obx(() => VizoMascot(
+                        size: isSmall ? 130 : 160,
+                        state: controller.loginMascotState.value,
+                        lookAt: controller.loginLookAt.value,
+                      )),
+                    ),
+                    
+                    SizedBox(height: isSmall ? AppDesign.spaceL : AppDesign.space40),
+                    
+                    // Elite Form Card
+                    const LoginFormCard(),
+                    
+                    const SizedBox(height: AppDesign.space32),
+                    
+                    // Modern Footer
+                    _buildFooter(),
+                    
+                    const SizedBox(height: AppDesign.spaceXL),
+                  ],
+                );
+              }
               
               return SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
@@ -32,33 +94,7 @@ class LoginView extends GetView<AuthController> {
                   constraints: BoxConstraints(minHeight: constraints.maxHeight),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: AppDesign.spaceL),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        SizedBox(height: isSmall ? AppDesign.spaceXL : AppDesign.space64),
-                        
-                        // Hero Mascot with floating animation
-                        Hero(
-                          tag: 'vizo_mascot',
-                          child: VizoMascot(
-                            size: isSmall ? 130 : 160,
-                            state: VizoState.idle,
-                          ),
-                        ),
-                        
-                        SizedBox(height: isSmall ? AppDesign.spaceL : AppDesign.space40),
-                        
-                        // Elite Form Card
-                        const LoginFormCard(),
-                        
-                        const SizedBox(height: AppDesign.space32),
-                        
-                        // Modern Footer
-                        _buildFooter(),
-                        
-                        const SizedBox(height: AppDesign.spaceXL),
-                      ],
-                    ),
+                    child: bodyContent,
                   ),
                 ),
               );
@@ -75,7 +111,10 @@ class LoginView extends GetView<AuthController> {
       child: AuthFooterLink(
         text: "New here? ",
         linkText: "Join the quest!",
-        onTap: () => Get.toNamed(Routes.register),
+        onTap: () {
+          controller.clearFields();
+          Get.toNamed(Routes.register);
+        },
       ),
     );
   }

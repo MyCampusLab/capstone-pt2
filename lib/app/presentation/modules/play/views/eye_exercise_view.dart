@@ -3,17 +3,20 @@ import 'package:get/get.dart';
 import '../controllers/eye_exercise_controller.dart';
 import 'package:visionsafe/app/presentation/global_widgets/atoms/v_button.dart';
 import 'package:visionsafe/app/presentation/global_widgets/molecules/vizo_mascot.dart';
+import 'package:visionsafe/app/presentation/global_widgets/molecules/eye_tracker_canvas.dart';
 import 'package:visionsafe/app/core/values/app_colors.dart';
+import 'package:visionsafe/app/core/values/app_design.dart';
 import 'package:visionsafe/app/core/values/app_text_styles.dart';
 import 'package:visionsafe/app/presentation/global_widgets/templates/base_screen_template.dart';
 
 class EyeExerciseView extends GetView<EyeExerciseController> {
   const EyeExerciseView({super.key});
 
-  
   @override
   Widget build(BuildContext context) {
     return BaseScreenTemplate(
+      topPadding: AppDesign.space24,
+      bottomPadding: AppDesign.space40,
       appBar: AppBar(
         title: Text('SENAM MATA', style: AppTextStyles.heading2),
         centerTitle: true,
@@ -28,11 +31,13 @@ class EyeExerciseView extends GetView<EyeExerciseController> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            const SizedBox(height: AppDesign.space24), // Memberikan jarak yang manis agar tidak terlalu mepet ke atas
             Obx(() => _buildVisualGuide(controller)),
-            const SizedBox(height: 48),
+            const SizedBox(height: AppDesign.space32),
             Obx(() => _buildInstruction(controller)),
-            const SizedBox(height: 60),
+            const SizedBox(height: AppDesign.space48),
             Obx(() => _buildActionButton(controller)),
+            const SizedBox(height: AppDesign.space24), // Jarak pengaman bawah
           ],
         ),
       ),
@@ -40,11 +45,13 @@ class EyeExerciseView extends GetView<EyeExerciseController> {
   }
 
   Widget _buildVisualGuide(EyeExerciseController controller) {
+    final step = controller.isRunning.value ? controller.steps[controller.currentStep.value] : null;
+    final action = step?['action'] ?? '';
     return Column(
       children: [
         VizoMascot(state: controller.isRunning.value ? VizoState.exercise : VizoState.idle),
         const SizedBox(height: 24),
-        if (controller.isRunning.value)
+        if (controller.isRunning.value) ...[
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             decoration: BoxDecoration(
@@ -57,6 +64,9 @@ class EyeExerciseView extends GetView<EyeExerciseController> {
               style: AppTextStyles.bodyBold.copyWith(color: Colors.white),
             ),
           ),
+          const SizedBox(height: 24),
+          EyeTrackerCanvas(actionType: action),
+        ],
       ],
     );
   }

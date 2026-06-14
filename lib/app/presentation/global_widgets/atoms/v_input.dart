@@ -12,6 +12,10 @@ class VInput extends StatefulWidget {
   final TextEditingController? controller;
   final TextInputType keyboardType;
   final IconData? prefixIcon;
+  final Iterable<String>? autofillHints;
+  final TextInputAction? textInputAction;
+  final ValueChanged<String>? onSubmitted;
+  final FocusNode? focusNode;
 
   const VInput({
     super.key,
@@ -21,6 +25,10 @@ class VInput extends StatefulWidget {
     this.controller,
     this.keyboardType = TextInputType.text,
     this.prefixIcon,
+    this.autofillHints,
+    this.textInputAction,
+    this.onSubmitted,
+    this.focusNode,
   });
 
   @override
@@ -30,12 +38,29 @@ class VInput extends StatefulWidget {
 class _VInputState extends State<VInput> {
   late FocusNode _focusNode;
   bool _isFocused = false;
+  late bool _obscureText;
 
   @override
   void initState() {
     super.initState();
-    _focusNode = FocusNode();
+    _obscureText = widget.isPassword;
+    _focusNode = widget.focusNode ?? FocusNode();
     _focusNode.addListener(_onFocusChange);
+    _isFocused = _focusNode.hasFocus;
+  }
+
+  @override
+  void didUpdateWidget(covariant VInput oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.focusNode != oldWidget.focusNode) {
+      _focusNode.removeListener(_onFocusChange);
+      if (oldWidget.focusNode == null) {
+        _focusNode.dispose();
+      }
+      _focusNode = widget.focusNode ?? FocusNode();
+      _focusNode.addListener(_onFocusChange);
+      _isFocused = _focusNode.hasFocus;
+    }
   }
 
   void _onFocusChange() {
@@ -49,7 +74,9 @@ class _VInputState extends State<VInput> {
   @override
   void dispose() {
     _focusNode.removeListener(_onFocusChange);
-    _focusNode.dispose();
+    if (widget.focusNode == null) {
+      _focusNode.dispose();
+    }
     super.dispose();
   }
 
@@ -101,8 +128,11 @@ class _VInputState extends State<VInput> {
           child: TextField(
             focusNode: _focusNode,
             controller: widget.controller,
-            obscureText: widget.isPassword,
+            obscureText: _obscureText,
             keyboardType: widget.keyboardType,
+            autofillHints: widget.autofillHints,
+            textInputAction: widget.textInputAction,
+            onSubmitted: widget.onSubmitted,
             style: AppTextStyles.bodyBold.copyWith(
               color: AppColors.charcoal,
               fontSize: 15,
@@ -122,6 +152,20 @@ class _VInputState extends State<VInput> {
                         color: _isFocused ? AppColors.primary : AppColors.primaryDark.withValues(alpha: 0.6),
                         size: 22,
                       ),
+                    )
+                  : null,
+              suffixIcon: widget.isPassword
+                  ? IconButton(
+                      icon: Icon(
+                        _obscureText ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                        color: _isFocused ? AppColors.primary : AppColors.primaryDark.withValues(alpha: 0.6),
+                        size: 20,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _obscureText = !_obscureText;
+                        });
+                      },
                     )
                   : null,
               contentPadding: const EdgeInsets.symmetric(

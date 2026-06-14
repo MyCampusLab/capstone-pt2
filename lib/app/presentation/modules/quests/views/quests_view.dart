@@ -15,16 +15,20 @@ class QuestsView extends GetView<QuestsController> {
 
   @override
   Widget build(BuildContext context) {
-    return const BaseScreenTemplate(
-      appBar: VAppHeader(title: 'HERO JOURNEY'),
+    return BaseScreenTemplate(
+      appBar: const VAppHeader(title: 'HERO JOURNEY'),
       bottomPadding: 180,
-      child: Column(
+      onRefresh: controller.refreshQuestData,
+      child: Obx(() => Column(
         children: [
-          QuestsHeader(),
-          SizedBox(height: 24), // Increased spacing
-          QuestsJourneyCard(),
+          const QuestsHeader(),
+          const SizedBox(height: 24),
+          if (controller.isLoading.value)
+            const Center(child: CircularProgressIndicator())
+          else
+            const QuestsJourneyCard(),
         ],
-      ),
+      )),
     );
   }
 }

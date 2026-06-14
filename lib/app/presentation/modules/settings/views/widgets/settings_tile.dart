@@ -35,7 +35,9 @@ class SettingsTile extends StatelessWidget {
             _buildIcon(),
             const SizedBox(width: 16),
             _buildContent(),
-            ?trailing,
+            if (trailing != null) ...[
+              trailing!,
+            ],
           ],
         ),
       ),

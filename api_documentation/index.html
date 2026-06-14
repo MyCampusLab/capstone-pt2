@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VisionSafe API - Swagger Interactive Playground</title>
+    <!-- Swagger UI Styles dari CDN Resmi -->
+    <link rel="stylesheet" type="text/css" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css" />
+    <link rel="icon" type="image/png" href="https://tkfxqlpmccnpzefywkef.supabase.co/storage/v1/object/public/assets/vizo.png" />
+    <style>
+        html {
+            box-sizing: border-box;
+            overflow-y: scroll;
+        }
+        *, *:before, *:after {
+            box-sizing: inherit;
+        }
+        body {
+            margin: 0;
+            background: #f7f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        /* Custom Header bertema VisionSafe */
+        .api-header {
+            background-color: #000000;
+            color: #ffffff;
+            padding: 16px 24px;
+            border-bottom: 4px solid #00D2FF;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .api-title {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 900;
+            letter-spacing: 1.5px;
+            color: #00D2FF;
+        }
+        .api-badge {
+            background-color: #00D2FF;
+            color: #000000;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 900;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header Tema VisionSafe -->
+    <div class="api-header">
+        <h1 class="api-title">VISIONSAFE RESTFUL API</h1>
+        <span class="api-badge">OAS 3.0 • SUPABASE</span>
+    </div>
+
+    <!-- Container Utama untuk Swagger UI -->
+    <div id="swagger-ui"></div>
+
+    <!-- Swagger UI Scripts dari CDN Resmi -->
+    <script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
+    <script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-standalone-preset.js"></script>
+    
+    <script>
+        window.onload = function() {
+            // Membaca YAML inline atau via url file lokal
+            const ui = SwaggerUIBundle({
+                url: "./swagger.yaml", // Mengambil langsung file swagger.yaml lokal
+                dom_id: '#swagger-ui',
+                deepLinking: true,
+                presets: [
+                    SwaggerUIBundle.presets.apis,
+                    SwaggerUIStandalonePreset
+                ],
+                plugins: [
+                    SwaggerUIBundle.plugins.DownloadUrl
+                ],
+                layout: "BaseLayout",
+                defaultModelsExpandDepth: 1,
+                defaultModelExpandDepth: 1,
+                docExpansion: "list"
+            });
+            window.ui = ui;
+        };
+    </script>
+</body>
+</html>

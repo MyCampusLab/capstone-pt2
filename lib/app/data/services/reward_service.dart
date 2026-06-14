@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:logger/logger.dart';
@@ -7,15 +8,25 @@ import '../models/sticker_model.dart';
 import 'supabase_service.dart';
 import 'package:visionsafe/app/presentation/global_widgets/molecules/v_toast.dart';
 import 'package:visionsafe/app/presentation/global_widgets/molecules/vizo_mascot.dart';
+import 'package:visionsafe/app/presentation/modules/home/controllers/home_controller.dart';
+import 'package:visionsafe/app/data/repositories/profile_repository.dart';
 
 /// Layanan untuk mengelola sistem reward dan koleksi stiker.
 /// Sinkronisasi Cloud: Menggunakan Supabase sebagai Source of Truth.
 class RewardService extends GetxService {
   final _logger = Logger();
   final _supabaseService = Get.find<SupabaseService>();
-  final _supabase = sb.Supabase.instance.client;
+  
+  sb.SupabaseClient get _supabase => sb.Supabase.instance.client;
   
   late Box<StickerModel> _stickerBox;
+  
+  @visibleForTesting
+  set stickerBox(Box<StickerModel> box) => _stickerBox = box;
+
+  @visibleForTesting
+  Box<StickerModel> get stickerBox => _stickerBox;
+
   final unlockedStickers = <StickerModel>[].obs;
 
   StreamSubscription<List<Map<String, dynamic>>>? _realtimeSubscription;
@@ -31,6 +42,14 @@ class RewardService extends GetxService {
     }
 
     _stickerBox = await Hive.openBox<StickerModel>('vizo_stickers');
+    if (_stickerBox.isEmpty) {
+      await _stickerBox.put('s1', StickerModel(id: 's1', title: 'Robo Vizo', description: 'Vizo dalam jubah tempur robotik.', isUnlocked: true));
+      await _stickerBox.put('s2', StickerModel(id: 's2', title: 'Cyber Blink', description: 'Vizo ahli kedip berkecepatan tinggi.', isUnlocked: false));
+      await _stickerBox.put('s3', StickerModel(id: 's3', title: 'Guardian Vizo', description: 'Vizo sang penjaga jarak legendaris.', isUnlocked: false));
+      await _stickerBox.put('s4', StickerModel(id: 's4', title: 'Zenith Master Vizo', description: 'Vizo sang pahlawan senam mata interaktif.', isUnlocked: false));
+    } else if (!_stickerBox.containsKey('s4')) {
+      await _stickerBox.put('s4', StickerModel(id: 's4', title: 'Zenith Master Vizo', description: 'Vizo sang pahlawan senam mata interaktif.', isUnlocked: false));
+    }
     
     // Listen Auth State untuk bind/unbind realtime listener secara dinamis
     _authSubscription = _supabase.auth.onAuthStateChange.listen((data) {
@@ -107,7 +126,12 @@ class RewardService extends GetxService {
               _handleServerSideUnlock(stickerId);
             }
           }, onError: (error) {
-            _logger.w('Reward Service Stream Error: $error');
+            final errStr = error.toString();
+            if (errStr.contains('SocketException') || errStr.contains('Failed host lookup')) {
+               _logger.w('Reward Service Stream: Menunggu jaringan...');
+            } else {
+               _logger.w('Reward Service Stream Error: $error');
+            }
             _handleStreamReconnect(userId, error);
           });
     } catch (e) {
@@ -214,4 +238,85 @@ class RewardService extends GetxService {
   }
 
   List<StickerModel> getAllStickers() => _stickerBox.values.toList();
+
+  int getStickerPrice(String id) {
+    switch (id) {
+      case 's1': return 0;
+      case 's2': return 250;
+      case 's3': return 500;
+      default: return 150;
+    }
+  }
+
+  Future<bool> buySticker(String id) async {
+    final sticker = _stickerBox.get(id);
+    if (sticker == null) {
+      VToast.show("Ups!", "Stiker tidak ditemukan.", state: VizoState.worried);
+      return false;
+    }
+    if (sticker.isUnlocked) {
+      VToast.show("Sudah Dimiliki", "Kamu sudah membuka stiker ini!", state: VizoState.happy);
+      return false;
+    }
+
+    final price = getStickerPrice(id);
+    final homeController = Get.find<HomeController>();
+    final profile = homeController.userProfile.value;
+    if (profile == null) {
+      VToast.show("Ups!", "Harap masuk atau sinkronisasi profil terlebih dahulu.", state: VizoState.worried);
+      return false;
+    }
+
+    if (profile.xp < price) {
+      VToast.show(
+        "XP Kurang!",
+        "Kamu butuh $price XP untuk membeli ${sticker.title}.",
+        state: VizoState.worried,
+      );
+      return false;
+    }
+
+    try {
+      // Deduct XP and update profile
+      final updatedProfile = profile.copyWith(
+        xp: profile.xp - price,
+        lastActiveAt: DateTime.now(),
+      );
+      homeController.userProfile.value = updatedProfile;
+      await Get.find<ProfileRepository>().updateProfile(updatedProfile);
+
+      // Unlock on Supabase if online
+      final user = _supabase.auth.currentUser;
+      if (user != null) {
+        await _supabase.from('user_stickers').insert({
+          'user_id': user.id,
+          'sticker_id': id,
+        });
+      }
+
+      // Update cache lokal
+      final updated = StickerModel(
+        id: sticker.id,
+        title: sticker.title,
+        description: sticker.description,
+        isUnlocked: true,
+        unlockedAt: DateTime.now(),
+      );
+      await _stickerBox.put(id, updated);
+      _loadUnlockedStickersFromCache();
+
+      VToast.show(
+        "Pembelian Sukses!",
+        "Hero ${updated.title} berhasil dibeli dan dibuka!",
+        state: VizoState.happy,
+      );
+      
+      _logger.i('Reward purchased: ${updated.title}');
+      return true;
+    } catch (e) {
+      _logger.e('Gagal melakukan pembelian stiker: $e');
+      VToast.show("Pembelian Gagal", "Terjadi kesalahan koneksi database.", state: VizoState.intervention);
+      return false;
+    }
+  }
 }

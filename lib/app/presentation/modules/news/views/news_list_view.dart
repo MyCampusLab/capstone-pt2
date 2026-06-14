@@ -7,6 +7,7 @@ import 'package:visionsafe/app/presentation/global_widgets/molecules/eye_care_ne
 import 'package:visionsafe/app/presentation/global_widgets/atoms/v_shimmer.dart';
 import 'package:visionsafe/app/presentation/global_widgets/molecules/v_empty_state.dart';
 import 'package:visionsafe/app/presentation/global_widgets/molecules/vizo_mascot.dart';
+import 'package:visionsafe/app/presentation/modules/news/views/global_analytics_view.dart';
 import '../controllers/news_controller.dart';
 
 class NewsListView extends GetView<NewsController> {
@@ -33,6 +34,14 @@ class NewsListView extends GetView<NewsController> {
           icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.primaryDark, size: 20),
           onPressed: () => Get.back(),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.pie_chart_rounded, color: AppColors.primary),
+            tooltip: "Analitik Big Data",
+            onPressed: () => Get.to(() => const GlobalAnalyticsView()),
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: SafeArea(
         child: Column(
@@ -104,6 +113,7 @@ class NewsListView extends GetView<NewsController> {
                             title: "Tidak Ada Berita",
                             description: "Kategori ini kosong atau Vizo belum menemukan artikel baru. Tarik layar untuk memuat ulang!",
                             mascotState: VizoState.sleeping,
+                            useNewsMascot: true,
                           ),
                         ),
                       ),

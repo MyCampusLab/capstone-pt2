@@ -8,6 +8,8 @@ class TelemetryModel {
   final double distance;
   final bool isViolation;
   final bool isBlinking;
+  final String eyeMovement;
+  final bool isSquinting;
   final DateTime timestamp;
 
   TelemetryModel({
@@ -15,6 +17,8 @@ class TelemetryModel {
     required this.distance,
     required this.isViolation,
     required this.isBlinking,
+    this.eyeMovement = 'center',
+    this.isSquinting = false,
     required this.timestamp,
   }) : id = id ?? UuidGenerator.generateV4();
 
@@ -24,6 +28,8 @@ class TelemetryModel {
       'distance': distance,
       'isViolation': isViolation,
       'isBlinking': isBlinking,
+      'eyeMovement': eyeMovement,
+      'isSquinting': isSquinting,
       'timestamp': timestamp.millisecondsSinceEpoch,
     };
   }
@@ -34,6 +40,8 @@ class TelemetryModel {
       distance: (map['distance'] as num).toDouble(),
       isViolation: map['isViolation'] as bool,
       isBlinking: map['isBlinking'] ?? false,
+      eyeMovement: map['eyeMovement'] as String? ?? 'center',
+      isSquinting: map['isSquinting'] as bool? ?? false,
       timestamp: DateTime.fromMillisecondsSinceEpoch(map['timestamp'] as int),
     );
   }

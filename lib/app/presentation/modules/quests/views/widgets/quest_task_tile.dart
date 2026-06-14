@@ -13,17 +13,17 @@ class QuestTaskTile extends GetView<QuestsController> {
 
   @override
   Widget build(BuildContext context) {
-    final status = quest['status'] as String;
+    final status = quest['status'] as String? ?? 'active';
+    final id = quest['id'] as String;
     final isLocked = status == 'locked';
-    final isCompleted = status == 'completed';
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Column(
         children: [
           Row(
             children: [
-              _buildStatusIcon(isLocked, isCompleted),
+              _buildStatusIcon(isLocked, false),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
@@ -35,20 +35,46 @@ class QuestTaskTile extends GetView<QuestsController> {
                         color: isLocked ? const Color(0xFF9E9E9E) : const Color(0xFF003366),
                       ),
                     ),
-                    Text(
-                      quest['subtitle'] ?? '',
-                      style: AppTextStyles.caption.copyWith(
-                        fontSize: 11,
-                        color: isLocked ? const Color(0xFFAAAAAA) : AppColors.grey,
-                      ),
-                    ),
+                    Obx(() {
+                      final progress = controller.getQuestProgress(id);
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 4),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(4),
+                            child: LinearProgressIndicator(
+                              value: progress,
+                              backgroundColor: Colors.grey.shade200,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                progress >= 1.0 ? Colors.green : AppColors.primary,
+                              ),
+                              minHeight: 6,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            progress >= 1.0 ? "GOAL REACHED!" : (quest['subtitle'] ?? ''),
+                            style: AppTextStyles.caption.copyWith(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: progress >= 1.0 ? Colors.green : AppColors.grey,
+                            ),
+                          ),
+                        ],
+                      );
+                    }),
                   ],
                 ),
               ),
-              if (status == 'active')
-                _buildStartButton()
-              else if (isCompleted)
-                const Icon(Icons.check_circle_rounded, color: Colors.blue, size: 24),
+              if (!isLocked)
+                Obx(() {
+                  final progress = controller.getQuestProgress(id);
+                  if (progress >= 1.0) {
+                    return const Icon(Icons.check_circle_rounded, color: Colors.green, size: 28);
+                  }
+                  return _buildStartButton();
+                }),
             ],
           ),
           if (!isLast) _buildStepLine(),

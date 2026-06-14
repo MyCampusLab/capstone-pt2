@@ -5,6 +5,7 @@ import 'package:visionsafe/app/core/values/app_colors.dart';
 import 'package:visionsafe/app/core/values/app_text_styles.dart';
 import 'package:visionsafe/app/data/models/news_model.dart';
 import 'package:visionsafe/app/presentation/global_widgets/molecules/vizo_mascot.dart';
+import 'package:visionsafe/app/presentation/global_widgets/molecules/vizo_news_mascot.dart';
 
 class NewsDetailView extends StatelessWidget {
   const NewsDetailView({super.key});
@@ -77,28 +78,36 @@ class NewsDetailView extends StatelessWidget {
               const SizedBox(height: 16),
               Row(
                 children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: AppColors.primaryDark.withValues(alpha: 0.05),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      news.sourceName,
-                      style: AppTextStyles.bodyBold.copyWith(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w900,
-                        color: AppColors.primaryDark,
+                  Flexible(
+                    flex: 1,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryDark.withValues(alpha: 0.05),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        news.sourceName,
+                        style: AppTextStyles.bodyBold.copyWith(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900,
+                          color: AppColors.primaryDark,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Text(
-                     "$dateStr • ${news.readingTimeMinutes} mnt baca",
-                    style: AppTextStyles.caption.copyWith(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.primaryDark.withValues(alpha: 0.5),
+                  Flexible(
+                    flex: 2,
+                    child: Text(
+                       "$dateStr • ${news.readingTimeMinutes} mnt baca",
+                      style: AppTextStyles.caption.copyWith(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.primaryDark.withValues(alpha: 0.5),
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],
@@ -117,15 +126,32 @@ class NewsDetailView extends StatelessWidget {
                     width: 1,
                   ),
                 ),
-                child: Text(
-                  news.description,
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    fontSize: 14.5,
-                    height: 1.75,
-                    color: AppColors.primaryDark.withValues(alpha: 0.85),
-                    letterSpacing: 0.25,
-                  ),
-                ),
+                child: news.description.trim().isEmpty
+                    ? Column(
+                        children: [
+                          Icon(Icons.article_outlined, size: 48, color: AppColors.primaryDark.withValues(alpha: 0.2)),
+                          const SizedBox(height: 12),
+                          Text(
+                            "Teks artikel ini tidak tersedia dalam ringkasan Big Data kami. Silakan klik tombol verifikasi di bawah untuk membaca isi selengkapnya langsung dari sumber medis aslinya.",
+                            textAlign: TextAlign.center,
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              fontSize: 14,
+                              height: 1.6,
+                              color: AppColors.primaryDark.withValues(alpha: 0.6),
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        ],
+                      )
+                    : Text(
+                        news.description,
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          fontSize: 14.5,
+                          height: 1.75,
+                          color: AppColors.primaryDark.withValues(alpha: 0.85),
+                          letterSpacing: 0.25,
+                        ),
+                      ),
               ),
               const SizedBox(height: 32),
               SizedBox(
@@ -134,7 +160,7 @@ class NewsDetailView extends StatelessWidget {
                   onPressed: () => _launchUrl(news.url),
                   icon: const Icon(Icons.open_in_browser_rounded, size: 18),
                   label: const Text(
-                    "BUKA ARTIKEL ASLI",
+                    "VERIFIKASI SUMBER MEDIS",
                     style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 0.8, fontSize: 13),
                   ),
                   style: ElevatedButton.styleFrom(
@@ -178,7 +204,7 @@ class NewsDetailView extends StatelessWidget {
       ),
       child: Row(
         children: [
-          VizoMascot(size: 40, state: news.mascotState),
+          VizoNewsMascot(size: 40, state: news.mascotState),
           const SizedBox(width: 14),
           Expanded(
             child: Text(

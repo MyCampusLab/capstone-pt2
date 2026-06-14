@@ -22,12 +22,15 @@ class MainWrapperView extends GetView<MainWrapperController> {
     ];
 
     return Scaffold(
-      body: Obx(() => IndexedStack(
-            index: controller.currentIndex.value,
-            children: pages,
-          )),
-      bottomNavigationBar: const VBottomNav(),
-      extendBody: true,
+      body: Stack(
+        children: [
+          Obx(() => IndexedStack(
+                index: controller.currentIndex.value,
+                children: pages,
+              )),
+          const VBottomNav(),
+        ],
+      ),
     );
   }
 }

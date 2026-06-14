@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
+import 'package:hive/hive.dart';
 import 'package:visionsafe/app/data/providers/vision_service_provider.dart';
 import 'package:visionsafe/app/data/services/sync_service.dart';
 import 'package:visionsafe/app/data/services/supabase_service.dart';
@@ -18,6 +19,8 @@ class MockVisionServiceProvider extends GetxService implements VisionServiceProv
   Future<bool> isServiceRunning() async => isRunning;
   @override
   Future<void> updateThreshold(double threshold) async {}
+  @override
+  Future<void> updateSamplingRate(int samplingRateMs) async {}
 }
 
 class MockSupabaseService extends GetxService implements SupabaseService {
@@ -45,11 +48,19 @@ class MockRewardService extends GetxService implements RewardService {
   @override
   final unlockedStickers = <StickerModel>[].obs;
   @override
+  Box<StickerModel> get stickerBox => throw UnimplementedError();
+  @override
+  set stickerBox(Box<StickerModel> value) => throw UnimplementedError();
+  @override
   Future<RewardService> init() async => this;
   @override
   List<StickerModel> getAllStickers() => [];
   @override
   Future<void> unlockSticker(String s) async {}
+  @override
+  int getStickerPrice(String id) => 150;
+  @override
+  Future<bool> buySticker(String id) async => true;
 }
 
 class MockNewsService extends GetxService implements NewsService {
