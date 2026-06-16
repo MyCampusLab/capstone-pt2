@@ -44,6 +44,27 @@ class HomeController extends GetxController with WidgetsBindingObserver {
   double get currentDistance => telemetryService.currentDistance.value;
   bool get isViolation => telemetryService.isViolation.value;
 
+  // Analisis Celah & Heartbeat
+  String get connectionStatusText {
+    final lastSync = _configService.lastCloudSyncTime;
+    if (lastSync == null) return "Menunggu Data Pertama";
+
+    final diff = DateTime.now().difference(lastSync);
+    if (diff.inMinutes < 15) return "Online & Aktif";
+    if (diff.inHours < 24) return "Sedang Offline";
+    return "Dimatikan Paksa / Offline Lama";
+  }
+
+  Color get connectionStatusColor {
+    final lastSync = _configService.lastCloudSyncTime;
+    if (lastSync == null) return Colors.grey;
+
+    final diff = DateTime.now().difference(lastSync);
+    if (diff.inMinutes < 15) return Colors.green;
+    if (diff.inHours < 24) return Colors.amber;
+    return Colors.red;
+  }
+
   // AI INTELLIGENCE: Mengambil keputusan state maskot secara cerdas (Cloud + Local Context)
   VizoState get dynamicMascotState {
     // 1. Prioritas Utama: Kondisi darurat saat ini

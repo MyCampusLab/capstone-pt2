@@ -211,6 +211,10 @@ class TelemetryService extends GetxService {
         _lastSyncFailedTime = null; // Reset cooldown
         await _telemetryBox.deleteAll(keysToProcess);
         
+        if (Get.isRegistered<ConfigService>()) {
+          Get.find<ConfigService>().updateLastCloudSyncTime();
+        }
+        
         _observability.log(
           severity: LogSeverity.info,
           category: 'TELEMETRY_SYNC_SUCCESS',

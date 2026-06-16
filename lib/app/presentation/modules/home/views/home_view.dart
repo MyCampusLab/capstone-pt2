@@ -150,11 +150,11 @@ class HomeView extends GetView<HomeController> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        _buildStatusPill(isConnected),
-                        if (controller.telemetryService.isPowerSaveActive.value) ...[
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _buildStatusPill(),
+                          if (controller.telemetryService.isPowerSaveActive.value) ...[
                           const SizedBox(width: 8),
                           _buildPowerSaveBadge(),
                         ],
@@ -230,30 +230,33 @@ class HomeView extends GetView<HomeController> {
     );
   }
 
-  Widget _buildStatusPill(bool isConnected) {
+  Widget _buildStatusPill() {
+    final statusText = controller.connectionStatusText;
+    final statusColor = controller.connectionStatusColor;
+    
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: isConnected ? Colors.green.withAlpha(30) : Colors.orange.withAlpha(30),
+        color: statusColor.withAlpha(30),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: isConnected ? Colors.green : Colors.orange,
+          color: statusColor,
           width: 1.5,
         ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Pulse-glowing green or orange dot
+          // Pulse-glowing dot
           Container(
             width: 8,
             height: 8,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: isConnected ? Colors.green : Colors.orange,
+              color: statusColor,
               boxShadow: [
                 BoxShadow(
-                  color: isConnected ? Colors.green.withAlpha(150) : Colors.orange.withAlpha(150),
+                  color: statusColor.withAlpha(150),
                   blurRadius: 4,
                   spreadRadius: 1,
                 ),
@@ -262,11 +265,11 @@ class HomeView extends GetView<HomeController> {
           ),
           const SizedBox(width: 6),
           Text(
-            isConnected ? "ONLINE" : "OFFLINE",
+            statusText.toUpperCase(),
             style: AppTextStyles.caption.copyWith(
-              fontSize: 9,
+              fontSize: 8.5,
               fontWeight: FontWeight.w900,
-              color: isConnected ? Colors.green[800] : Colors.orange[800],
+              color: statusColor,
               letterSpacing: 0.5,
             ),
           ),
