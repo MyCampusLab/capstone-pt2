@@ -32,7 +32,7 @@ class VisionAnalyzer(private val context: Context) {
     private val SMOOTHING_FACTOR = 0.3
 
     init {
-        setupFaceLandmarker()
+        Thread { setupFaceLandmarker() }.start()
     }
 
     private fun setupFaceLandmarker() {

@@ -185,23 +185,28 @@ class VisionService : Service(), androidx.lifecycle.LifecycleOwner {
     }
 
     private fun processImage(imageProxy: ImageProxy) {
-        val currentTime = System.currentTimeMillis()
-        if (currentTime - lastProcessedTime < SAMPLING_RATE_MS) {
-            imageProxy.close()
-            return
-        }
-        lastProcessedTime = currentTime
+        try {
+            val currentTime = System.currentTimeMillis()
+            if (currentTime - lastProcessedTime < SAMPLING_RATE_MS) {
+                return // Akan memanggil imageProxy.close() di blok finally
+            }
+            lastProcessedTime = currentTime
 
-        val result = analyzer.analyze(imageProxy)
-        // Log krusial untuk memastikan AI deteksi di background
-        if (result != null) {
-            Log.d("VisionSafe", "AI STATUS: FACE DETECTED AT ${result.distance.toInt()} CM. Blink: ${result.isBlinking}")
-        } else {
-            Log.v("VisionSafe", "AI STATUS: NO FACE")
+            val result = analyzer.analyze(imageProxy)
+            // Log krusial untuk memastikan AI deteksi di background
+            if (result != null) {
+                Log.d("VisionSafe", "AI STATUS: FACE DETECTED AT ${result.distance.toInt()} CM. Blink: ${result.isBlinking}")
+            } else {
+                Log.v("VisionSafe", "AI STATUS: NO FACE")
+            }
+            
+            handleResult(result, currentTime)
+        } catch (e: Exception) {
+            Log.e("VisionSafe", "Frame processing failed, but pipeline saved", e)
+        } finally {
+            // MENJAMIN CAMERA PIPELINE TIDAK PERNAH MATI
+            imageProxy.close()
         }
-        
-        handleResult(result, currentTime)
-        imageProxy.close()
     }
 
     private fun handleResult(result: VisionAnalyzer.AnalysisResult?, currentTime: Long) {
