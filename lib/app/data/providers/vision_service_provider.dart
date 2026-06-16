@@ -24,6 +24,40 @@ class VisionServiceProvider extends GetxService {
     }
   }
 
+  Future<bool> checkOverlayPermission() async {
+    try {
+      return await _channel.invokeMethod('checkOverlayPermission') ?? false;
+    } on PlatformException catch (e) {
+      _logger.e('Failed to check overlay permission: ${e.message}');
+      return false;
+    }
+  }
+
+  Future<void> requestOverlayPermission() async {
+    try {
+      await _channel.invokeMethod('requestOverlayPermission');
+    } on PlatformException catch (e) {
+      _logger.e('Failed to request overlay permission: ${e.message}');
+    }
+  }
+
+  Future<bool> checkBatteryOptimization() async {
+    try {
+      return await _channel.invokeMethod('checkBatteryOptimization') ?? false;
+    } on PlatformException catch (e) {
+      _logger.e('Failed to check battery optimization: ${e.message}');
+      return false;
+    }
+  }
+
+  Future<void> requestIgnoreBatteryOptimization() async {
+    try {
+      await _channel.invokeMethod('requestIgnoreBatteryOptimization');
+    } on PlatformException catch (e) {
+      _logger.e('Failed to request ignore battery optimization: ${e.message}');
+    }
+  }
+
   Future<bool> isServiceRunning() async {
     try {
       final result = await _channel.invokeMethod<bool>('isServiceRunning');

@@ -241,6 +241,24 @@ class HomeController extends GetxController with WidgetsBindingObserver {
         if (!await Permission.notification.isGranted) {
           await Permission.notification.request();
         }
+        
+        // Pengecekan Optimasi Baterai (PENTING untuk menjaga Background Service tetap hidup)
+        final isIgnoringBattery = await _serviceProvider.checkBatteryOptimization();
+        if (!isIgnoringBattery) {
+          _configService.toggleService(false);
+          VDialog.show(
+            title: "Optimasi Baterai Terdeteksi",
+            message: "Sistem Android akan mematikan perlindungan ini secara diam-diam. Izinkan aplikasi berjalan tanpa batas baterai?",
+            confirmLabel: "IZINKAN",
+            onConfirm: () async {
+              Get.back();
+              await _serviceProvider.requestIgnoreBatteryOptimization();
+            },
+            cancelLabel: "NANTI",
+          );
+          return;
+        }
+
         await _serviceProvider.startService();
         VToast.show("VisionSafe", "Layanan Penjaga Mata Aktif!", state: VizoState.happy);
       } catch (e) {
