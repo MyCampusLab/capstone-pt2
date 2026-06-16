@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
-import 'package:visionsafe/app/core/values/app_colors.dart';
 import 'vizo_mascot.dart';
 
 class VizoNewsMascot extends StatelessWidget {

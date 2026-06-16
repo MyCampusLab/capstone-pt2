@@ -21,7 +21,7 @@ class TelemetryService extends GetxService {
   
   late Box _telemetryBox;
   late Box _telemetryDlqBox;
-  final _batchThreshold = 10;
+  final _batchThreshold = 12; // Sync every 1 minute (12 records * 5 seconds)
   final _maxBatchSize = 100;
   bool _isSyncing = false;
 
@@ -79,6 +79,7 @@ class TelemetryService extends GetxService {
 
   void _listenToNativeTelemetry() {
     DateTime lastUiUpdateTime = DateTime.now();
+    DateTime lastDbSaveTime = DateTime.now();
 
     _telemetrySubscription = _eventChannel.receiveBroadcastStream().listen((dynamic event) {
       if (event is Map) {
@@ -97,6 +98,8 @@ class TelemetryService extends GetxService {
         final model = TelemetryModel.fromMap(event);
         
         final now = DateTime.now();
+        
+        // 1. UI Update Throttle: 200ms (5 FPS) for smooth visual feedback
         if (now.difference(lastUiUpdateTime).inMilliseconds > 200) {
           currentDistance.value = model.distance;
           isViolation.value = model.isViolation;
@@ -107,7 +110,12 @@ class TelemetryService extends GetxService {
           lastUiUpdateTime = now;
         }
 
-        _saveToLocal(model);
+        // 2. Database & Sync Throttle: 5000ms (5 seconds) to prevent Battery Drain
+        // This stops the app from saving 30 frames per second to the local database!
+        if (now.difference(lastDbSaveTime).inMilliseconds >= 5000) {
+          _saveToLocal(model);
+          lastDbSaveTime = now;
+        }
       }
     }, onError: (error) {
       _observability.log(

@@ -15,6 +15,7 @@ abstract class Routes {
   static const quests = _Paths.quests;
   static const news = _Paths.news;
   static const newsDetail = _Paths.newsDetail;
+  static const waitingVerification = _Paths.waitingVerification;
 }
 
 abstract class _Paths {
@@ -32,4 +33,5 @@ abstract class _Paths {
   static const quests = '/quests';
   static const news = '/news';
   static const newsDetail = '/news-detail';
+  static const waitingVerification = '/waiting-verification';
 }

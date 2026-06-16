@@ -12,7 +12,7 @@
 
 ## 🎙️ BAGIAN 1: PEMBUKAAN (KAMU YANG MEMBUKA)
 
-*(Kondisi: Tampilkan halaman depan GitHub repository di layar proyektor)*
+*(Kondisi   : Tampilkan halaman depan GitHub repository di layar proyektor)*
 
 **Irsyad:**
 "Assalamu’alaikum Warahmatullahi Wabarakatuh. Selamat pagi/siang Pak/Bu dosen dan teman-teman. Kami dari tim VisionSafe akan mempresentasikan arsitektur UTS Big Data kami. Project yang kami bangun bukan sebatas pengambilan data manual dari lokal, melainkan kami merancang sebuah **Autonomous Big Data Pipeline (Pipa Data Otonom)** secara *End-to-End*. Mulai dari pengambilan data di Cloud secara otomatis, hingga datanya muncul secara *real-time* ke dalam genggaman pengguna melalui aplikasi mobile berbasis Flutter kami.

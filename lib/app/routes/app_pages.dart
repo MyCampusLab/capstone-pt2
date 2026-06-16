@@ -25,6 +25,7 @@ import '../presentation/modules/splash/views/splash_view.dart';
 import '../presentation/modules/news/views/news_list_view.dart';
 import '../presentation/modules/news/views/news_detail_view.dart';
 import '../presentation/modules/news/bindings/news_binding.dart';
+import '../presentation/modules/auth/views/waiting_verification_view.dart';
 
 part 'app_routes.dart';
 
@@ -32,6 +33,8 @@ class AppPages {
   AppPages._();
 
   static const initial = Routes.splash;
+  static const newsDetail = _Paths.newsDetail;
+  static const waitingVerification = _Paths.waitingVerification;
 
   static final routes = [
     GetPage(
@@ -100,6 +103,10 @@ class AppPages {
     GetPage(
       name: _Paths.newsDetail,
       page: () => const NewsDetailView(),
+    ),
+    GetPage(
+      name: _Paths.waitingVerification,
+      page: () => const WaitingVerificationView(),
     ),
   ];
 }

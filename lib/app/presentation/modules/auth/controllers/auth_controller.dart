@@ -169,9 +169,8 @@ class AuthController extends GetxController {
         VToast.show("Welcome Hero!", "Registration successful. Start your quest!", state: VizoState.happy);
         _safeOffAll(Routes.mainWrapper);
       } else {
-        // Confirmation required or manual login needed
-        VToast.show("Check your Email", "Registration successful! Please verify your email before logging in.", state: VizoState.happy);
-        _safeOffAll(Routes.login);
+        // Confirmation required
+        _safeOffAll(Routes.waitingVerification);
       }
     } on AuthException catch (e) {
       String errorMsg = "Gagal Daftar. Silakan coba lagi.";
