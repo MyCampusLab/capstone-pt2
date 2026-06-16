@@ -16,6 +16,7 @@ import 'package:visionsafe/app/data/models/profile_model.dart';
 import 'package:visionsafe/app/presentation/global_widgets/molecules/v_dialog.dart';
 import 'package:visionsafe/app/presentation/global_widgets/molecules/v_toast.dart';
 import 'package:visionsafe/app/presentation/global_widgets/molecules/vizo_mascot.dart';
+import 'package:visionsafe/app/core/values/app_colors.dart';
 
 class HomeController extends GetxController with WidgetsBindingObserver {
   final _logger = Logger();
@@ -248,44 +249,94 @@ class HomeController extends GetxController with WidgetsBindingObserver {
       // PROSES NYALAKAN: Langsung gas, optimis.
       _configService.toggleService(true);
       HapticFeedback.mediumImpact();
-      try {
-        if (!await Permission.camera.isGranted && !(await Permission.camera.request().isGranted)) {
-          _configService.toggleService(false);
-          _showPermissionError("Kamera");
-          return;
-        }
-        if (!await Permission.systemAlertWindow.isGranted && !(await Permission.systemAlertWindow.request().isGranted)) {
-          _configService.toggleService(false);
-          _showPermissionError("Tampilkan di Atas Aplikasi Lain");
-          return;
-        }
-        if (!await Permission.notification.isGranted) {
-          await Permission.notification.request();
-        }
-        
-        // Pengecekan Optimasi Baterai (PENTING untuk menjaga Background Service tetap hidup)
-        final isIgnoringBattery = await _serviceProvider.checkBatteryOptimization();
-        if (!isIgnoringBattery) {
-          _configService.toggleService(false);
-          VDialog.show(
-            title: "Optimasi Baterai Terdeteksi",
-            message: "Sistem Android akan mematikan perlindungan ini secara diam-diam. Izinkan aplikasi berjalan tanpa batas baterai?",
-            confirmLabel: "IZINKAN",
-            onConfirm: () async {
-              Get.back();
-              await _serviceProvider.requestIgnoreBatteryOptimization();
-            },
-            cancelLabel: "NANTI",
-          );
-          return;
-        }
-
-        await _serviceProvider.startService();
-        VToast.show("VisionSafe", "Layanan Penjaga Mata Aktif!", state: VizoState.happy);
-      } catch (e) {
+      
+      if (!_configService.hasAcceptedFaceDataPolicy) {
         _configService.toggleService(false);
-        VToast.show("Ups!", "Terjadi kesalahan: ${e.toString()}", state: VizoState.intervention);
+        _showProminentDisclosure();
+        return;
       }
+
+      await _executeStartService();
+    }
+  }
+
+  void _showProminentDisclosure() {
+    VDialog.show(
+      title: "KEBIJAKAN PRIVASI KAMERA & DATA WAJAH",
+      icon: Icons.privacy_tip_rounded,
+      iconColor: AppColors.primaryDark,
+      content: const Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            "VisionSafe membutuhkan akses ke Kamera Depan untuk mendeteksi jarak mata Anda ke layar menggunakan teknologi pemindaian wajah (Face Tracking).",
+            style: TextStyle(fontSize: 14, height: 1.4),
+          ),
+          SizedBox(height: 12),
+          Text(
+            "PENTING:",
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+          ),
+          SizedBox(height: 4),
+          Text(
+            "• Pemrosesan gambar dilakukan 100% LOKAL di perangkat Anda.\n"
+            "• TIDAK ADA foto, video, atau data biometrik wajah yang disimpan.\n"
+            "• TIDAK ADA gambar yang dikirim ke server/cloud kami.\n"
+            "• Kami hanya memproses data angka jarak (cm) untuk melindungi penglihatan Anda.",
+            style: TextStyle(fontSize: 14, height: 1.4),
+          ),
+        ],
+      ),
+      confirmLabel: "SAYA MENGERTI & SETUJU",
+      onConfirm: () async {
+        Get.back();
+        await _configService.setHasAcceptedFaceDataPolicy();
+        _configService.toggleService(true);
+        await _executeStartService();
+      },
+      cancelLabel: "TOLAK",
+    );
+  }
+
+  Future<void> _executeStartService() async {
+    try {
+      if (!await Permission.camera.isGranted && !(await Permission.camera.request().isGranted)) {
+        _configService.toggleService(false);
+        _showPermissionError("Kamera");
+        return;
+      }
+      if (!await Permission.systemAlertWindow.isGranted && !(await Permission.systemAlertWindow.request().isGranted)) {
+        _configService.toggleService(false);
+        _showPermissionError("Tampilkan di Atas Aplikasi Lain");
+        return;
+      }
+      if (!await Permission.notification.isGranted) {
+        await Permission.notification.request();
+      }
+      
+      // Pengecekan Optimasi Baterai (PENTING untuk menjaga Background Service tetap hidup)
+      final isIgnoringBattery = await _serviceProvider.checkBatteryOptimization();
+      if (!isIgnoringBattery) {
+        _configService.toggleService(false);
+        VDialog.show(
+          title: "Optimasi Baterai Terdeteksi",
+          message: "Sistem Android akan mematikan perlindungan ini secara diam-diam. Izinkan aplikasi berjalan tanpa batas baterai?",
+          confirmLabel: "IZINKAN",
+          onConfirm: () async {
+            Get.back();
+            await _serviceProvider.requestIgnoreBatteryOptimization();
+          },
+          cancelLabel: "NANTI",
+        );
+        return;
+      }
+
+      await _serviceProvider.startService();
+      VToast.show("VisionSafe", "Layanan Penjaga Mata Aktif!", state: VizoState.happy);
+    } catch (e) {
+      _configService.toggleService(false);
+      VToast.show("Ups!", "Terjadi kesalahan: ${e.toString()}", state: VizoState.intervention);
     }
   }
 

@@ -11,6 +11,7 @@ class ConfigService extends GetxService {
   static const String _pendingSyncKey = 'settings_pending_sync';
   static const String _parentPinKey = 'parent_pin_v1';
   static const String _lastSyncTimeKey = 'last_sync_time_v1';
+  static const String _faceDataPolicyKey = 'face_data_policy_accepted';
   static const double _defaultThreshold = 30.0;
 
   // Streams reaktif yang terikat langsung ke Hive untuk stabilitas data
@@ -77,6 +78,12 @@ class ConfigService extends GetxService {
 
   Future<void> updateLastCloudSyncTime() async {
     await _settingsBox.put(_lastSyncTimeKey, DateTime.now().millisecondsSinceEpoch);
+  }
+
+  bool get hasAcceptedFaceDataPolicy => _settingsBox.get(_faceDataPolicyKey, defaultValue: false);
+
+  Future<void> setHasAcceptedFaceDataPolicy() async {
+    await _settingsBox.put(_faceDataPolicyKey, true);
   }
 
   /// Menarik setting terbaru dari Supabase Cloud ke HP.
