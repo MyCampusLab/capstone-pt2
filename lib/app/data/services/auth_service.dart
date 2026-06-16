@@ -86,30 +86,16 @@ class AuthService extends GetxService {
     }
   }
 
-  /// NATIVE GOOGLE SIGN IN (Handshake Web & Android)
+  /// NATIVE GOOGLE SIGN IN (Diubah ke OAuth Browser Based untuk bypass masalah SHA-1 Debug)
   Future<void> nativeGoogleSignIn() async {
     try {
-      final GoogleSignIn googleSignIn = GoogleSignIn(
-        serverClientId: _webClientId,
-        clientId: _androidClientId,
+      // Menggunakan Supabase OAuth (Web Based) agar aman dari masalah SHA-1 Debug.
+      // Ini akan melempar pengguna ke browser dan kembali via deep link.
+      await _supabase.auth.signInWithOAuth(
+        OAuthProvider.google,
+        redirectTo: 'com.hn.visionsafe://login-callback',
       );
-      
-      final googleUser = await googleSignIn.signIn();
-      if (googleUser == null) return;
-
-      final googleAuth = await googleUser.authentication;
-      final String? idToken = googleAuth.idToken;
-      final String? accessToken = googleAuth.accessToken;
-
-      if (idToken == null) throw 'Gagal memperoleh ID Token dari Google.';
-
-      await _supabase.auth.signInWithIdToken(
-        provider: OAuthProvider.google,
-        idToken: idToken,
-        accessToken: accessToken,
-      );
-      
-      _logger.i('Google Login Berhasil: ${googleUser.email}');
+      _logger.i('Google Login via OAuth diluncurkan.');
     } catch (e) {
       _logger.e('Kesalahan Google Auth: $e');
       rethrow;

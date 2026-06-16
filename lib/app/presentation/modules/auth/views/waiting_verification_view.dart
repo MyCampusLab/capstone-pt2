@@ -19,8 +19,8 @@ class WaitingVerificationView extends StatelessWidget {
       Get.snackbar(
         "Oops!", 
         "Tidak dapat membuka aplikasi email secara otomatis.",
-        backgroundColor: AppColors.error.withValues(alpha: 0.1),
-        colorText: AppColors.error,
+        backgroundColor: AppColors.danger.withValues(alpha: 0.1),
+        colorText: AppColors.danger,
         margin: const EdgeInsets.all(16),
       );
     }
@@ -58,7 +58,7 @@ class WaitingVerificationView extends StatelessWidget {
               Text(
                 "Cek Email Kamu, Hero! 📧",
                 style: AppTextStyles.heading2.copyWith(
-                  color: AppColors.textPrimary,
+                  color: AppColors.charcoal,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -67,8 +67,8 @@ class WaitingVerificationView extends StatelessWidget {
               // Description
               Text(
                 "Vizo sudah mengirimkan tiket rahasia ke email kamu. Klik link di dalamnya untuk mengaktifkan kekuatan penuh VisionSafe!",
-                style: AppTextStyles.body1.copyWith(
-                  color: AppColors.textSecondary,
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: AppColors.grey,
                   height: 1.5,
                 ),
                 textAlign: TextAlign.center,
