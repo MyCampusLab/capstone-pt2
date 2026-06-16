@@ -9,6 +9,7 @@ class ConfigService extends GetxService {
   static const String _serviceEnabledKey = 'service_enabled';
   static const String _isFirstRunKey = 'is_first_run_v1';
   static const String _pendingSyncKey = 'settings_pending_sync';
+  static const String _parentPinKey = 'parent_pin_v1';
   static const double _defaultThreshold = 30.0;
 
   // Streams reaktif yang terikat langsung ke Hive untuk stabilitas data
@@ -60,6 +61,12 @@ class ConfigService extends GetxService {
 
   void updateThreshold(double value) {
     threshold.value = value;
+  }
+
+  String? get parentPin => _settingsBox.get(_parentPinKey);
+  
+  Future<void> setParentPin(String pin) async {
+    await _settingsBox.put(_parentPinKey, pin);
   }
 
   /// Menarik setting terbaru dari Supabase Cloud ke HP.

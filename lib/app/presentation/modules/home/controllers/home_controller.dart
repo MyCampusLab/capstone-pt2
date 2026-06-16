@@ -203,22 +203,38 @@ class HomeController extends GetxController with WidgetsBindingObserver {
   Future<void> toggleService() async {
     final previousState = _configService.isServiceEnabled.value;
     
-    // Optimistic state transition
-    _configService.toggleService(!previousState);
-    HapticFeedback.mediumImpact();
-    
-    try {
-      if (previousState) {
-        await _serviceProvider.stopService();
-        VToast.show("VisionSafe", "Layanan Penjaga Mata Dinonaktifkan.", state: VizoState.sleeping);
+    if (previousState) {
+      // PROSES MATIKAN: Harus lewat validasi PIN
+      final currentPin = _configService.parentPin;
+      
+      if (currentPin == null) {
+        // Belum ada PIN, paksa buat PIN dulu
+        _showPinDialog(
+          title: "Buat PIN Orang Tua",
+          message: "Buat 4-digit PIN agar perlindungan tidak bisa dimatikan sembarangan.",
+          isSetup: true,
+        );
       } else {
+        // Sudah ada PIN, minta masukkan
+        _showPinDialog(
+          title: "Masukkan PIN",
+          message: "Masukkan 4-digit PIN Orang Tua untuk mematikan perlindungan.",
+          isSetup: false,
+          correctPin: currentPin,
+        );
+      }
+    } else {
+      // PROSES NYALAKAN: Langsung gas, optimis.
+      _configService.toggleService(true);
+      HapticFeedback.mediumImpact();
+      try {
         if (!await Permission.camera.isGranted && !(await Permission.camera.request().isGranted)) {
-          _configService.toggleService(previousState);
+          _configService.toggleService(false);
           _showPermissionError("Kamera");
           return;
         }
         if (!await Permission.systemAlertWindow.isGranted && !(await Permission.systemAlertWindow.request().isGranted)) {
-          _configService.toggleService(previousState);
+          _configService.toggleService(false);
           _showPermissionError("Tampilkan di Atas Aplikasi Lain");
           return;
         }
@@ -227,12 +243,86 @@ class HomeController extends GetxController with WidgetsBindingObserver {
         }
         await _serviceProvider.startService();
         VToast.show("VisionSafe", "Layanan Penjaga Mata Aktif!", state: VizoState.happy);
+      } catch (e) {
+        _configService.toggleService(false);
+        VToast.show("Ups!", "Terjadi kesalahan: ${e.toString()}", state: VizoState.intervention);
       }
-    } catch (e) {
-      _configService.toggleService(previousState);
-      VToast.show("Ups!", "Terjadi kesalahan: ${e.toString()}", state: VizoState.intervention);
     }
   }
+
+  void _showPinDialog({
+    required String title,
+    required String message,
+    required bool isSetup,
+    String? correctPin,
+  }) {
+    final pinController = TextEditingController();
+    Get.defaultDialog(
+      title: title,
+      titlePadding: const EdgeInsets.only(top: 24),
+      contentPadding: const EdgeInsets.all(24),
+      content: Column(
+        children: [
+          Text(message, textAlign: TextAlign.center),
+          const SizedBox(height: 16),
+          TextField(
+            controller: pinController,
+            keyboardType: TextInputType.number,
+            maxLength: 4,
+            obscureText: true,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 24, letterSpacing: 8),
+            decoration: const InputDecoration(
+              border: OutlineInputBorder(),
+              hintText: "****",
+              counterText: "",
+            ),
+          ),
+        ],
+      ),
+      confirm: ElevatedButton(
+        onPressed: () async {
+          final input = pinController.text;
+          if (input.length != 4) {
+            Get.snackbar("Error", "PIN harus 4 digit!");
+            return;
+          }
+
+          if (isSetup) {
+            await _configService.setParentPin(input);
+            Get.back();
+            // Lanjut proses stop setelah setup
+            _executeStopService();
+          } else {
+            if (input == correctPin) {
+              Get.back();
+              _executeStopService();
+            } else {
+              Get.snackbar("Akses Ditolak", "PIN Salah!", backgroundColor: Colors.red, colorText: Colors.white);
+            }
+          }
+        },
+        child: const Text("Lanjut"),
+      ),
+      cancel: TextButton(
+        onPressed: () => Get.back(),
+        child: const Text("Batal"),
+      ),
+    );
+  }
+
+  Future<void> _executeStopService() async {
+    _configService.toggleService(false);
+    HapticFeedback.mediumImpact();
+    try {
+      await _serviceProvider.stopService();
+      VToast.show("VisionSafe", "Layanan Penjaga Mata Dinonaktifkan.", state: VizoState.sleeping);
+    } catch (e) {
+      _configService.toggleService(true);
+      VToast.show("Ups!", "Gagal mematikan: ${e.toString()}", state: VizoState.intervention);
+    }
+  }
+
 
   void _showPermissionError(String permissionName) {
     VDialog.show(

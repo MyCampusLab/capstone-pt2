@@ -13,7 +13,7 @@ import 'observability_service.dart';
 
 /// Layanan Inti untuk orkestrasi aliran data telemetri.
 class TelemetryService extends GetxService {
-  static const _eventChannel = EventChannel('com.irsyad.visionsafe/telemetry');
+  static const _eventChannel = EventChannel('com.hn.visionsafe/telemetry');
   late final ObservabilityService _observability = Get.find<ObservabilityService>();
   SyncService get _syncService => Get.find<SyncService>();
   

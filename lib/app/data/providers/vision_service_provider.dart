@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 import 'package:logger/logger.dart';
 
 class VisionServiceProvider extends GetxService {
-  static const _channel = MethodChannel('com.irsyad.visionsafe/service');
+  static const _channel = MethodChannel('com.hn.visionsafe/service');
   final _logger = Logger();
 
   Future<void> startService() async {

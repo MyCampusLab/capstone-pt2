@@ -3,7 +3,7 @@
 
 -keep class com.google.mediapipe.** { *; }
 -keep class androidx.camera.** { *; }
--keep class com.irsyad.visionsafe.** { *; }
+-keep class com.hn.visionsafe.** { *; }
 
 -dontwarn com.google.mediapipe.**
 -dontwarn androidx.camera.**

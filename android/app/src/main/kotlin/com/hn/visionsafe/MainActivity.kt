@@ -1,4 +1,4 @@
-package com.irsyad.visionsafe.visionsafe
+package com.hn.visionsafe
 
 import android.app.ActivityManager
 import android.content.Context
@@ -11,8 +11,8 @@ import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
-    private val METHOD_CHANNEL = "com.irsyad.visionsafe/service"
-    private val EVENT_CHANNEL = "com.irsyad.visionsafe/telemetry"
+    private val METHOD_CHANNEL = "com.hn.visionsafe/service"
+    private val EVENT_CHANNEL = "com.hn.visionsafe/telemetry"
 
     companion object {
         var eventSink: EventChannel.EventSink? = null

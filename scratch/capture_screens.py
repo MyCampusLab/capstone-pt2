@@ -26,7 +26,7 @@ def main():
     os.makedirs("./screenshots", exist_ok=True)
 
     # Grant permissions to avoid permission dialogs during tests
-    package_name = "com.irsyad.visionsafe.visionsafe"
+    package_name = "com.hn.visionsafe"
     print(f"Granting camera, system overlay, and notification permissions to {package_name}...")
     subprocess.run(["adb", "-s", device_id, "shell", "pm", "grant", package_name, "android.permission.CAMERA"])
     subprocess.run(["adb", "-s", device_id, "shell", "pm", "grant", package_name, "android.permission.POST_NOTIFICATIONS"])

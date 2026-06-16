@@ -63,7 +63,7 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="com.irsyad.visionsafe" android:host="login-callback" />
+                <data android:scheme="com.hn.visionsafe" android:host="login-callback" />
             </intent-filter>
         </activity>
 

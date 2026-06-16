@@ -1,4 +1,4 @@
-package com.irsyad.visionsafe.visionsafe
+package com.hn.visionsafe
 
 import android.app.*
 import android.content.Context
@@ -34,7 +34,7 @@ class VisionService : Service(), androidx.lifecycle.LifecycleOwner {
 
     companion object {
         var instance: VisionService? = null
-        const val ACTION_STOP = "com.irsyad.visionsafe.ACTION_STOP"
+        const val ACTION_STOP = "com.hn.visionsafe.ACTION_STOP"
     }
 
     fun updateThreshold(newThreshold: Double) {

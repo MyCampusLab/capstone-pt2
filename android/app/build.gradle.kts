@@ -14,7 +14,7 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace = "com.irsyad.visionsafe.visionsafe"
+    namespace = "com.hn.visionsafe"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -37,7 +37,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.irsyad.visionsafe.visionsafe"
+        applicationId = "com.hn.visionsafe"
         minSdk = 24
         targetSdk = 34
         versionCode = flutter.versionCode

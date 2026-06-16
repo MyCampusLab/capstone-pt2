@@ -47,4 +47,4 @@ Stores educational content for users.
 ## Native AI Pipeline
 - **Engine**: MediaPipe Face Landmarker (3D Face Mesh).
 - **Sampling**: 500ms intervals (2 FPS).
-- **Communication**: Flutter EventChannel (`com.irsyad.visionsafe/telemetry`).
+- **Communication**: Flutter EventChannel (`com.hn.visionsafe/telemetry`).
