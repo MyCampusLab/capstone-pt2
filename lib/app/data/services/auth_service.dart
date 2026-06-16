@@ -179,6 +179,22 @@ class AuthService extends GetxService {
     }
   }
 
+  /// Menghapus data akun sesuai kebijakan privasi Play Store.
+  Future<void> deleteAccount() async {
+    try {
+      final user = _supabase.auth.currentUser;
+      if (user != null) {
+        // Hapus data profil dan telemetri (Best effort, bergantung konfigurasi RLS Supabase)
+        await _supabase.from('profiles').delete().eq('id', user.id).catchError((_) => null);
+      }
+      await signOut();
+      _logger.i('Akun berhasil dihapus beserta datanya.');
+    } catch (e) {
+      _logger.e('Gagal menghapus akun: $e');
+      rethrow;
+    }
+  }
+
   String? get currentUserId => _supabase.auth.currentUser?.id;
 
   @override

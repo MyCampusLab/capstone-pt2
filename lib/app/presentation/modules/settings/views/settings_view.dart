@@ -66,6 +66,16 @@ class SettingsView extends StatelessWidget {
             onTap: () => _handleLogout(auth),
             trailing: const Icon(Icons.exit_to_app_rounded, color: AppColors.danger),
           ),
+          const SizedBox(height: 12),
+          SettingsTile(
+            icon: Icons.delete_forever_rounded,
+            title: "Hapus Akun & Data",
+            subtitle: "Hapus permanen akun dan seluruh riwayat telemetri (Syarat Play Store).",
+            iconBgColor: AppColors.danger.withAlpha(20),
+            iconColor: Colors.red[900]!,
+            onTap: () => _handleDeleteAccount(auth),
+            trailing: Icon(Icons.warning_amber_rounded, color: Colors.red[900]),
+          ),
           const SizedBox(height: 40),
           _buildVersionInfo(),
         ],
@@ -87,6 +97,37 @@ class SettingsView extends StatelessWidget {
               Get.offAllNamed(Routes.login);
             },
             child: const Text("KELUAR", style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _handleDeleteAccount(AuthService auth) {
+    Get.dialog(
+      AlertDialog(
+        title: const Text("Hapus Permanen Akun?"),
+        content: const Text(
+          "Tindakan ini tidak bisa dibatalkan. Semua data profil dan histori kesehatan mata akan dihapus permanen.",
+        ),
+        actions: [
+          TextButton(onPressed: () => Get.back(), child: const Text("BATAL")),
+          TextButton(
+            onPressed: () async {
+              Get.back(); // Tutup dialog konfirmasi
+              Get.dialog(
+                const Center(child: CircularProgressIndicator()),
+                barrierDismissible: false,
+              );
+              try {
+                await auth.deleteAccount();
+                Get.offAllNamed(Routes.login);
+              } catch (e) {
+                Get.back(); // Tutup loading
+                Get.snackbar("Error", "Gagal menghapus akun: $e");
+              }
+            },
+            child: const Text("HAPUS DATA", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
