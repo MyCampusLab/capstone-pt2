@@ -20,6 +20,8 @@ import '../presentation/modules/quests/views/quests_view.dart';
 import '../presentation/modules/quests/bindings/quests_binding.dart';
 import '../presentation/modules/stats/bindings/stats_binding.dart';
 import '../presentation/modules/play/bindings/play_binding.dart';
+import '../presentation/modules/play/views/health_quiz_view.dart';
+import '../presentation/modules/play/bindings/health_quiz_binding.dart';
 
 import '../presentation/modules/splash/views/splash_view.dart';
 import '../presentation/modules/news/views/news_list_view.dart';
@@ -107,6 +109,11 @@ class AppPages {
     GetPage(
       name: _Paths.waitingVerification,
       page: () => const WaitingVerificationView(),
+    ),
+    GetPage(
+      name: _Paths.healthQuiz,
+      page: () => const HealthQuizView(),
+      binding: HealthQuizBinding(),
     ),
   ];
 }

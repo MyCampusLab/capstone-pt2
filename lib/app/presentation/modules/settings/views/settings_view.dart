@@ -11,6 +11,9 @@ import 'dialogs/change_password_dialog.dart';
 import 'dialogs/distance_setter_dialog.dart';
 import 'package:visionsafe/app/presentation/global_widgets/templates/base_screen_template.dart';
 import 'package:visionsafe/app/presentation/global_widgets/molecules/v_app_header.dart';
+import 'dialogs/about_app_dialog.dart';
+import 'dialogs/how_to_use_dialog.dart';
+import 'dialogs/jwt_developer_dialog.dart';
 
 /// View Pengaturan Utama (Elite Professional Version).
 /// File length strictly < 200 lines.
@@ -75,6 +78,36 @@ class SettingsView extends StatelessWidget {
             iconColor: Colors.red[900]!,
             onTap: () => _handleDeleteAccount(auth),
             trailing: Icon(Icons.warning_amber_rounded, color: Colors.red[900]),
+          ),
+          const SizedBox(height: 24),
+
+          const SettingsSection(title: "INFORMASI APLIKASI"),
+          SettingsTile(
+            icon: Icons.info_outline_rounded,
+            title: "Tentang Aplikasi",
+            subtitle: "Visi, misi, dan informasi pengembang.",
+            onTap: () => AboutAppDialog.show(),
+            trailing: const Icon(Icons.chevron_right, color: AppColors.primaryDark),
+          ),
+          const SizedBox(height: 12),
+          SettingsTile(
+            icon: Icons.menu_book_rounded,
+            title: "Cara Penggunaan",
+            subtitle: "Panduan untuk perlindungan optimal.",
+            onTap: () => HowToUseDialog.show(),
+            trailing: const Icon(Icons.chevron_right, color: AppColors.primaryDark),
+          ),
+          const SizedBox(height: 24),
+
+          const SettingsSection(title: "MODE PENGEMBANG (DEV)"),
+          SettingsTile(
+            icon: Icons.security_rounded,
+            title: "Security Token (JWT)",
+            subtitle: "Ambil token untuk validasi jwt.io dosen.",
+            iconBgColor: AppColors.primaryDark.withAlpha(20),
+            iconColor: AppColors.primaryDark,
+            onTap: () => JwtDeveloperDialog.show(),
+            trailing: const Icon(Icons.code_rounded, color: AppColors.primaryDark),
           ),
           const SizedBox(height: 40),
           _buildVersionInfo(),

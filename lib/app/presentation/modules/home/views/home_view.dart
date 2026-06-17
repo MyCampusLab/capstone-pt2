@@ -92,12 +92,12 @@ class HomeView extends GetView<HomeController> {
       final level = profile?.level ?? 1;
       final xp = profile?.xp ?? 0;
 
-      final nextLevelXp = (level + 1) * 100;
-      final currentLevelBaseXp = level * 100;
+      final currentLevelBaseXp = (level - 1) * 100;
+      final nextLevelXp = level * 100;
       final progress = (xp - currentLevelBaseXp) / (nextLevelXp - currentLevelBaseXp);
       final clampedProgress = progress.clamp(0.0, 1.0);
 
-      final isConnected = controller.isBackendConnected.value;
+
 
       return GestureDetector(
         onTap: () {

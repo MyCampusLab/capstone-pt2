@@ -1,21 +1,25 @@
 package com.hn.visionsafe
 
+import android.animation.ObjectAnimator
+import android.animation.PropertyValuesHolder
+import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.Color
 import android.graphics.PixelFormat
 import android.view.Gravity
-import android.view.LayoutInflater
 import android.view.View
 import android.view.WindowManager
+import android.view.animation.AccelerateDecelerateInterpolator
+import android.view.animation.OvershootInterpolator
 import android.widget.FrameLayout
+import android.widget.LinearLayout
 import android.widget.TextView
 import android.util.Log
 import android.graphics.drawable.GradientDrawable
 
 /**
  * Manager Intervensi Overlay (Native Android).
- * Diperhalus agar mendekati style 2D Retro Flutter.
- * File: BlurOverlayManager.kt (< 150 lines)
+ * Terintegrasi dengan VizoMascotView (Custom View 1:1 dengan Flutter Robot Mascot).
  */
 class BlurOverlayManager(private val context: Context) {
 
@@ -23,20 +27,18 @@ class BlurOverlayManager(private val context: Context) {
     private var overlayView: View? = null
     private var isShowing = false
     private var isCurrentlyEmergency = false
+    private val animators = mutableListOf<ValueAnimator>()
 
     fun show(isEmergency: Boolean = false) {
         if (isShowing && isCurrentlyEmergency == isEmergency) return
         
         try {
-            // Jika status berubah (dari blur ke emergency), hapus dulu yang lama
-            if (isShowing) {
-                windowManager?.removeView(overlayView)
-            }
+            if (isShowing) hide()
 
             windowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
             val params = getLayoutParams(isEmergency)
             
-            overlayView = createStyledOverlay(isEmergency)
+            overlayView = createAnimatedOverlay(isEmergency)
             windowManager?.addView(overlayView, params)
             isShowing = true
             isCurrentlyEmergency = isEmergency
@@ -50,12 +52,11 @@ class BlurOverlayManager(private val context: Context) {
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
         else WindowManager.LayoutParams.TYPE_PHONE
 
-        var flags = WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
-        
-        // Jika emergency, kita BUKAN FLAG_NOT_FOCUSABLE agar dia menyerap semua input (Device Lock)
-        if (!isEmergency) {
-            flags = flags or WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
-        }
+        // BUG FIX: Selalu gunakan FLAG_NOT_FOCUSABLE agar overlay tidak memblokir sentuhan (touch events).
+        // Jika tidak, pengguna akan terjebak (stuck) dan tidak bisa menekan tombol matikan fitur.
+        val flags = WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or 
+                    WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or 
+                    WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
 
         return WindowManager.LayoutParams(
             WindowManager.LayoutParams.MATCH_PARENT, 
@@ -66,68 +67,115 @@ class BlurOverlayManager(private val context: Context) {
         ).apply { gravity = Gravity.CENTER }
     }
 
-    private fun createStyledOverlay(isEmergency: Boolean): View {
+    private fun createAnimatedOverlay(isEmergency: Boolean): View {
         val root = FrameLayout(context).apply {
-            // Background Gelap & Mengganggu (Z-Order High)
             setBackgroundColor(Color.parseColor(if (isEmergency) "#E6000000" else "#CC000000"))
         }
 
-        // Card Container - Retro 2D Style
-        val card = FrameLayout(context).apply {
-            background = GradientDrawable().apply {
-                setColor(if (isEmergency) Color.parseColor("#FF0000") else Color.parseColor("#1A1A1A"))
-                cornerRadius = 80f
-                setStroke(12, Color.WHITE) // Border Retro Tebal
+        val layout = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            layoutParams = FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT, 
+                FrameLayout.LayoutParams.MATCH_PARENT
+            )
+        }
+
+        // 1. MASKOT ROBOT VIZO (1:1 dengan Flutter)
+        val mascotView = VizoMascotView(context, isEmergency).apply {
+            layoutParams = LinearLayout.LayoutParams(600, 600).apply {
+                setMargins(0, 0, 0, 40)
             }
-            setPadding(60, 100, 60, 100)
-            elevation = 30f
         }
 
-        val layout = android.widget.LinearLayout(context).apply {
-            orientation = android.widget.LinearLayout.VERTICAL
+        // 2. KOTAK PESAN PERINGATAN (Estetika Rapi & Profesional)
+        val card = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
+            background = GradientDrawable().apply {
+                setColor(Color.parseColor("#1A1A1A"))
+                cornerRadius = 60f
+                setStroke(12, if (isEmergency) Color.parseColor("#FF6B6B") else Color.parseColor("#00D2FF"))
+            }
+            setPadding(80, 80, 80, 80)
+            elevation = 50f
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, 
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(80, 0, 80, 0)
+            }
         }
 
-        // Icon Stop / Warning
-        val icon = TextView(context).apply {
-            text = if (isEmergency) "🛑" else "⚠️"
-            textSize = 80f
-            gravity = Gravity.CENTER
-        }
-
-        // Pesan Utama - Runtut kebawah & Tegas
-        val message = TextView(context).apply {
-            text = if (isEmergency) 
-                "STOP!\nTERLALU DEKAT\n\nMUNDUR\nSEKARANG" 
-            else 
-                "PERINGATAN!\n\nJAUHKAN\nPANDANGANMU"
-            
-            setTextColor(Color.WHITE)
-            textSize = 32f
+        val title = TextView(context).apply {
+            text = if (isEmergency) "MATA DALAM BAHAYA!" else "VIZO SEDANG MENJAGA"
+            setTextColor(if (isEmergency) Color.parseColor("#FF6B6B") else Color.parseColor("#00D2FF"))
+            textSize = 28f
             gravity = Gravity.CENTER
             setTypeface(null, android.graphics.Typeface.BOLD)
-            setLineSpacing(0f, 1.2f)
         }
 
-        val cardParams = FrameLayout.LayoutParams(
-            FrameLayout.LayoutParams.MATCH_PARENT, 
-            FrameLayout.LayoutParams.WRAP_CONTENT, 
-            Gravity.CENTER
-        ).apply {
-            setMargins(50, 0, 50, 0)
+        val subtitle = TextView(context).apply {
+            text = if (isEmergency) 
+                "Jarak Anda terlalu dekat dengan layar. Mundur sekarang untuk melindungi mata." 
+            else 
+                "Jarak aman terdeteksi. Teruskan kebiasaan baik ini!"
+            
+            setTextColor(Color.WHITE)
+            textSize = 18f
+            gravity = Gravity.CENTER
+            setPadding(0, 30, 0, 0)
+            setLineSpacing(0f, 1.3f)
         }
-        
-        layout.addView(icon)
-        layout.addView(message)
-        card.addView(layout)
-        root.addView(card, cardParams)
-        
+
+        card.addView(title)
+        card.addView(subtitle)
+
+        layout.addView(mascotView)
+        layout.addView(card)
+        root.addView(layout)
+
+        // --- SISTEM ANIMASI ---
+        val floatAnim = ObjectAnimator.ofFloat(mascotView, "translationY", -40f, 40f).apply {
+            duration = 1500
+            repeatCount = ValueAnimator.INFINITE
+            repeatMode = ValueAnimator.REVERSE
+            interpolator = AccelerateDecelerateInterpolator()
+            start()
+        }
+        animators.add(floatAnim)
+
+        val scaleX = PropertyValuesHolder.ofFloat(View.SCALE_X, 1.0f, 1.05f)
+        val scaleY = PropertyValuesHolder.ofFloat(View.SCALE_Y, 1.0f, 1.05f)
+        val pulseAnim = ObjectAnimator.ofPropertyValuesHolder(card, scaleX, scaleY).apply {
+            duration = if (isEmergency) 300 else 1000
+            repeatCount = ValueAnimator.INFINITE
+            repeatMode = ValueAnimator.REVERSE
+            interpolator = AccelerateDecelerateInterpolator()
+            start()
+        }
+        animators.add(pulseAnim)
+
+        layout.scaleX = 0f
+        layout.scaleY = 0f
+        layout.alpha = 0f
+        layout.animate()
+            .scaleX(1f)
+            .scaleY(1f)
+            .alpha(1f)
+            .setDuration(600)
+            .setInterpolator(OvershootInterpolator(1.2f))
+            .start()
+
         return root
     }
 
     fun hide() {
         if (!isShowing) return
         try {
+            animators.forEach { it.cancel() }
+            animators.clear()
+
             windowManager?.removeView(overlayView)
             overlayView = null
             isShowing = false

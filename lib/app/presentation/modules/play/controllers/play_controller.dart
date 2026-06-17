@@ -15,7 +15,7 @@ class PlayController extends GetxController {
       'title': 'Kuis Sehat',
       'icon': Icons.quiz,
       'color': AppColors.secondary,
-      'route': null,
+      'route': Routes.healthQuiz,
     },
     {
       'title': 'Cari Vizo',

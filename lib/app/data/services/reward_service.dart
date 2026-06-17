@@ -319,4 +319,22 @@ class RewardService extends GetxService {
       return false;
     }
   }
+
+  Future<void> addXp(int amount) async {
+    try {
+      final homeController = Get.find<HomeController>();
+      final profile = homeController.userProfile.value;
+      if (profile == null) return;
+
+      final updatedProfile = profile.copyWith(
+        xp: profile.xp + amount,
+        lastActiveAt: DateTime.now(),
+      );
+      homeController.userProfile.value = updatedProfile;
+      await Get.find<ProfileRepository>().updateProfile(updatedProfile);
+      _logger.i('Reward Service: Berhasil menambah $amount XP');
+    } catch (e) {
+      _logger.e('Gagal menambah XP: $e');
+    }
+  }
 }

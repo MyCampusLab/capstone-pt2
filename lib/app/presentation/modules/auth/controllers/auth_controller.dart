@@ -5,7 +5,7 @@ import 'package:visionsafe/app/routes/app_pages.dart';
 import 'package:visionsafe/app/data/repositories/auth_repository.dart';
 import 'package:visionsafe/app/presentation/global_widgets/molecules/v_toast.dart';
 import 'package:visionsafe/app/presentation/global_widgets/molecules/vizo_mascot.dart';
-import 'package:visionsafe/app/data/services/auth_service.dart';
+
 
 /// Controller untuk manajemen state dan logika UI Autentikasi.
 class AuthController extends GetxController {
@@ -38,15 +38,6 @@ class AuthController extends GetxController {
     super.onInit();
     _initializeControllers();
     _initializeFocusNodes();
-    
-    // Dengarkan perubahan state auth. Sangat berguna untuk Deep Link dari Email Verifikasi.
-    // Jika user sedang di WaitingVerificationView dan mengklik link di email, state akan berubah jadi true.
-    ever(Get.find<AuthService>().isLoggedIn, (bool loggedIn) {
-      if (loggedIn) {
-        _safeOffAll(Routes.mainWrapper);
-        VToast.show("Berhasil!", "Email telah terverifikasi. Selamat datang!", state: VizoState.happy);
-      }
-    });
   }
 
   void _initializeControllers() {
@@ -179,8 +170,16 @@ class AuthController extends GetxController {
         VToast.show("Welcome Hero!", "Registration successful. Start your quest!", state: VizoState.happy);
         _safeOffAll(Routes.mainWrapper);
       } else {
-        // Confirmation required
-        _safeOffAll(Routes.waitingVerification);
+        // Confirmation required, kirim args untuk polling background
+        if (!_isDisposed) {
+          Get.offAllNamed(
+            Routes.waitingVerification,
+            arguments: {
+              'email': emailController.text.trim(),
+              'password': passwordController.text.trim(),
+            },
+          );
+        }
       }
     } on AuthException catch (e) {
       String errorMsg = "Gagal Daftar. Silakan coba lagi.";

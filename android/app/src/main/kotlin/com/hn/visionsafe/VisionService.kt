@@ -224,12 +224,9 @@ class VisionService : Service(), androidx.lifecycle.LifecycleOwner {
             if (violationStartTime == 0L) violationStartTime = currentTime
             
             val violationDuration = currentTime - violationStartTime
-            if (violationDuration > 10000L) { // 10 Detik: Emergency Lock
-                Log.w("VisionSafe", "!!! EMERGENCY LOCK !!!")
+            if (violationDuration > TRIGGER_DELAY_MS) { // 1.5 Detik: Langsung Marah (Merah)
+                Log.w("VisionSafe", "!!! CRITICAL DISTANCE !!! Showing Emergency.")
                 updateOverlay(true, isEmergency = true)
-            } else if (violationDuration > TRIGGER_DELAY_MS) { // 1.5 Detik: Normal Blur
-                Log.w("VisionSafe", "!!! CRITICAL DISTANCE !!! Showing Blur.")
-                updateOverlay(true, isEmergency = false)
             }
         } else {
             violationStartTime = 0L

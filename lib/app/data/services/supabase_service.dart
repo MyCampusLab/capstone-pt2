@@ -182,4 +182,17 @@ class SupabaseService extends GetxService {
       return [];
     }
   }
+
+  /// Mendengarkan aliran data telemetri secara real-time (WebSockets) untuk Dasbor Orang Tua.
+  Stream<List<Map<String, dynamic>>> watchAnalyticsData({int limit = 1000}) {
+    final user = _supabase.auth.currentUser;
+    if (user == null) return const Stream.empty();
+
+    return _supabase
+        .from('telemetry')
+        .stream(primaryKey: ['id'])
+        .eq('user_id', user.id)
+        .order('created_at', ascending: false)
+        .limit(limit);
+  }
 }

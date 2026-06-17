@@ -24,15 +24,50 @@ class VisionAnalyzer(private val context: Context) {
     private var reusableBitmap: Bitmap? = null
     
     // Konstanta Biometrik & Optik
-    private val REAL_IPD_CM = 6.3 // Rata-rata Inter-Pupillary Distance (IPD)
-    private val FOCAL_LENGTH_PIXELS = 820.0 // Hasil kalibrasi sensor kamera standar
+    // Rata-rata IPD default (5.5 cm). Akan dikalibrasi otomatis secara Real-Time oleh AI!
+    private var smoothedPhysicalIpdCm = 5.5 
     
+    // Hardware-Agnostic Auto-Calibration (Mengatasi akurasi di berbagai tipe HP)
+    private var dynamicFocalLengthPixels = 820.0 
+    private var sensorActiveWidthPixels = 1080.0
+
     // Smoothing (Low-Pass Filter) untuk menghindari jitter
     private var lastDistance = 0.0
-    private val SMOOTHING_FACTOR = 0.3
+    private val SMOOTHING_FACTOR = 0.25 // Lebih lambat dan stabil
 
     init {
+        calculateHardwareOptics()
         Thread { setupFaceLandmarker() }.start()
+    }
+
+    private fun calculateHardwareOptics() {
+        try {
+            val cameraManager = context.getSystemService(Context.CAMERA_SERVICE) as android.hardware.camera2.CameraManager
+            val cameraIds = cameraManager.cameraIdList
+            for (id in cameraIds) {
+                val chars = cameraManager.getCameraCharacteristics(id)
+                val facing = chars.get(android.hardware.camera2.CameraCharacteristics.LENS_FACING)
+                if (facing == android.hardware.camera2.CameraCharacteristics.LENS_FACING_FRONT) {
+                    val focalLengths = chars.get(android.hardware.camera2.CameraCharacteristics.LENS_INFO_AVAILABLE_FOCAL_LENGTHS)
+                    val sensorSize = chars.get(android.hardware.camera2.CameraCharacteristics.SENSOR_INFO_PHYSICAL_SIZE)
+                    val activeArray = chars.get(android.hardware.camera2.CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE)
+                    
+                    if (focalLengths != null && focalLengths.isNotEmpty() && sensorSize != null && activeArray != null) {
+                        val fMm = focalLengths[0]
+                        val sensorWidthMm = sensorSize.width
+                        // BUG FIX: Selalu gunakan sisi terpanjang sensor agar rotasi HP tidak merusak rasio matematis
+                        sensorActiveWidthPixels = max(activeArray.width(), activeArray.height()).toDouble()
+                        
+                        // Menghitung focal length asli lensa hp (dalam pixel) pada resolusi penuh sensor
+                        dynamicFocalLengthPixels = (fMm * sensorActiveWidthPixels) / sensorWidthMm
+                        Log.i("VisionSafe", "HARDWARE OPTICS CALIBRATED: Focal Length=${dynamicFocalLengthPixels}px, Sensor Width=${sensorActiveWidthPixels}px")
+                        break
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("VisionSafe", "Gagal membaca hardware kamera, menggunakan default fallback.", e)
+        }
     }
 
     private fun setupFaceLandmarker() {
@@ -88,19 +123,61 @@ class VisionAnalyzer(private val context: Context) {
             val leftEye = landmarks[33]
             val rightEye = landmarks[263]
 
-            // 2. Kalkulasi Euclidean Distance 3D
+            // 2. Kalkulasi Euclidean Distance 3D antar Pupil (IPD Pixel)
             val dx = (rightEye.x() - leftEye.x()) * bitmap.width
             val dy = (rightEye.y() - leftEye.y()) * bitmap.height
             val dz = (rightEye.z() - leftEye.z()) * bitmap.width 
 
             val pixelIpd3d = sqrt(dx.pow(2) + dy.pow(2) + dz.pow(2))
             
-            // 3. Konversi ke Jarak Nyata
-            val rawDistance = (REAL_IPD_CM * FOCAL_LENGTH_PIXELS) / pixelIpd3d
+            // 3. AUTO-CALIBRATION MENGGUNAKAN DIAMETER IRIS (KONSTANTA BIOLOGIS MANUSIA)
+            // Fakta Medis Global: Diameter Iris manusia (bayi hingga dewasa) selalu konstan di angka ~1.17 cm.
+            // Kita menggunakan Iris untuk melacak proporsi wajah asli pengguna, lalu menghitung IPD aslinya!
+            if (landmarks.size >= 478) {
+                // Left Iris Horizontal Edges (469 - 471)
+                val lIrisDx = (landmarks[469].x() - landmarks[471].x()) * bitmap.width
+                val lIrisDy = (landmarks[469].y() - landmarks[471].y()) * bitmap.height
+                val pixelIrisLeft = sqrt(lIrisDx.pow(2) + lIrisDy.pow(2))
+
+                // Right Iris Horizontal Edges (474 - 476)
+                val rIrisDx = (landmarks[474].x() - landmarks[476].x()) * bitmap.width
+                val rIrisDy = (landmarks[474].y() - landmarks[476].y()) * bitmap.height
+                val pixelIrisRight = sqrt(rIrisDx.pow(2) + rIrisDy.pow(2))
+
+                val avgPixelIris = (pixelIrisLeft + pixelIrisRight) / 2.0
+                
+                if (avgPixelIris > 2.0) { // Cegah noise ekstrim saat blur
+                    val instantIpdCm = (pixelIpd3d / avgPixelIris) * 1.17
+                    
+                    // Validasi kewajaran IPD Manusia (4.0 cm Balita - 7.5 cm Dewasa Besar)
+                    if (instantIpdCm in 4.0..7.5) {
+                        // Slow-Adapt IPD: Proporsi wajah tidak berubah cepat, jadi kita pakai smoothing 98%
+                        smoothedPhysicalIpdCm = (instantIpdCm * 0.02) + (smoothedPhysicalIpdCm * 0.98)
+                    }
+                }
+            }
+
+            // 4. Validasi Head Pose (Menoleh Ekstrem)
+            val headTurnRatio = abs(dz) / pixelIpd3d
+            if (headTurnRatio > 0.55) {
+                // BUG FIX: Mengembalikan null jika wajah terlalu miring agar sistem tidak "stuck/freeze"
+                // pada jarak terakhir. Ini memungkinkan overlay peringatan untuk hilang (dismiss).
+                return null
+            }
             
-            // 4. Smoothing Filter
-            if (lastDistance == 0.0) lastDistance = rawDistance
-            lastDistance = (rawDistance * SMOOTHING_FACTOR) + (lastDistance * (1.0 - SMOOTHING_FACTOR))
+            // 5. Konversi ke Jarak Nyata (Pinhole Camera Model dengan Hardware-Agnostic Optics)
+            // BUG FIX (Audit Mode): Menangani rotasi layar (Portrait/Landscape) dan rasio crop CameraX.
+            // Membandingkan dimensi maksimal (max_dim) menjamin keakuratan rasio tanpa terpengaruh orientasi.
+            val maxBitmapDim = max(bitmap.width, bitmap.height).toDouble()
+            val effectiveFocalLength = dynamicFocalLengthPixels * (maxBitmapDim / sensorActiveWidthPixels)
+            val rawDistance = (smoothedPhysicalIpdCm * effectiveFocalLength) / pixelIpd3d
+            
+            // 6. Smart Snap Filter (Low-Pass Filter)
+            if (lastDistance == 0.0 || abs(rawDistance - lastDistance) > 15.0) {
+                lastDistance = rawDistance
+            } else {
+                lastDistance = (rawDistance * SMOOTHING_FACTOR) + (lastDistance * (1.0 - SMOOTHING_FACTOR))
+            }
             
             // 5. Deteksi Kedipan & Pergerakan Mata via Blendshapes
             var isBlinking = false

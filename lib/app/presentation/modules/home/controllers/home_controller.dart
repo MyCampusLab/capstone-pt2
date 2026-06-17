@@ -186,10 +186,7 @@ class HomeController extends GetxController with WidgetsBindingObserver {
     final currentXp = profile.xp;
     final newXp = currentXp + amount;
     
-    int newLevel = profile.level;
-    while (newXp >= (newLevel + 1) * 100) {
-      newLevel++;
-    }
+    int newLevel = (newXp ~/ 100) + 1;
 
     final updatedProfile = profile.copyWith(
       xp: newXp,
@@ -288,7 +285,7 @@ class HomeController extends GetxController with WidgetsBindingObserver {
           ),
         ],
       ),
-      confirmLabel: "SAYA MENGERTI & SETUJU",
+      confirmLabel: "SAYA SETUJU",
       onConfirm: () async {
         Get.back();
         await _configService.setHasAcceptedFaceDataPolicy();

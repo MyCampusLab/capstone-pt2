@@ -21,6 +21,14 @@ class MockVisionServiceProvider extends GetxService implements VisionServiceProv
   Future<void> updateThreshold(double threshold) async {}
   @override
   Future<void> updateSamplingRate(int samplingRateMs) async {}
+  @override
+  Future<bool> checkBatteryOptimization() async => true;
+  @override
+  Future<bool> checkOverlayPermission() async => true;
+  @override
+  Future<void> requestIgnoreBatteryOptimization() async {}
+  @override
+  Future<void> requestOverlayPermission() async {}
 }
 
 class MockSupabaseService extends GetxService implements SupabaseService {
@@ -42,6 +50,8 @@ class MockSupabaseService extends GetxService implements SupabaseService {
   Future<List<String>> getUnlockedStickerIds() async => [];
   @override
   Future<List<Map<String, dynamic>>> getLeaderboard() async => [];
+  @override
+  Stream<List<Map<String, dynamic>>> watchAnalyticsData({int limit = 1000}) => const Stream.empty();
 }
 
 class MockRewardService extends GetxService implements RewardService {
@@ -61,6 +71,8 @@ class MockRewardService extends GetxService implements RewardService {
   int getStickerPrice(String id) => 150;
   @override
   Future<bool> buySticker(String id) async => true;
+  @override
+  Future<void> addXp(int amount) async {}
 }
 
 class MockNewsService extends GetxService implements NewsService {

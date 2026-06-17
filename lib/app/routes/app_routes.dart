@@ -16,6 +16,7 @@ abstract class Routes {
   static const news = _Paths.news;
   static const newsDetail = _Paths.newsDetail;
   static const waitingVerification = _Paths.waitingVerification;
+  static const healthQuiz = _Paths.healthQuiz;
 }
 
 abstract class _Paths {
@@ -34,4 +35,5 @@ abstract class _Paths {
   static const news = '/news';
   static const newsDetail = '/news-detail';
   static const waitingVerification = '/waiting-verification';
+  static const healthQuiz = '/health-quiz';
 }

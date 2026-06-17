@@ -1,13 +1,65 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:visionsafe/app/core/values/app_colors.dart';
 import 'package:visionsafe/app/core/values/app_text_styles.dart';
 import 'package:visionsafe/app/presentation/global_widgets/molecules/vizo_mascot.dart';
 import 'package:visionsafe/app/routes/app_pages.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class WaitingVerificationView extends StatelessWidget {
+class WaitingVerificationView extends StatefulWidget {
   const WaitingVerificationView({super.key});
+
+  @override
+  State<WaitingVerificationView> createState() => _WaitingVerificationViewState();
+}
+
+class _WaitingVerificationViewState extends State<WaitingVerificationView> {
+  Timer? _pollingTimer;
+  String? _email;
+  String? _password;
+
+  @override
+  void initState() {
+    super.initState();
+    
+    // Ambil kredensial dari arguments yang dikirim saat register
+    final args = Get.arguments as Map<String, dynamic>?;
+    if (args != null) {
+      _email = args['email'];
+      _password = args['password'];
+      
+      if (_email != null && _password != null) {
+        _startPolling();
+      }
+    }
+  }
+
+  void _startPolling() {
+    _pollingTimer = Timer.periodic(const Duration(seconds: 3), (timer) async {
+      try {
+        final response = await Supabase.instance.client.auth.signInWithPassword(
+          email: _email!,
+          password: _password!,
+        );
+        
+        if (response.session != null) {
+          // Berhasil login! (Artinya user sudah klik verifikasi di laptop/perangkat lain)
+          _pollingTimer?.cancel();
+          Get.offAllNamed(Routes.mainWrapper);
+        }
+      } catch (e) {
+        // Akan error 'Email not confirmed' selama belum di-klik, biarkan saja.
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _pollingTimer?.cancel();
+    super.dispose();
+  }
 
   Future<void> _openEmailApp() async {
     final Uri emailLaunchUri = Uri(
@@ -48,7 +100,7 @@ class WaitingVerificationView extends StatelessWidget {
                 child: const Center(
                   child: VizoMascot(
                     size: 200,
-                    state: VizoState.happy,
+                    state: VizoState.focused,
                   ),
                 ),
               ),
@@ -56,7 +108,7 @@ class WaitingVerificationView extends StatelessWidget {
               
               // Title
               Text(
-                "Cek Email Kamu, Hero! 📧",
+                "Menunggu Verifikasi... ⏳",
                 style: AppTextStyles.heading2.copyWith(
                   color: AppColors.charcoal,
                 ),
@@ -66,7 +118,7 @@ class WaitingVerificationView extends StatelessWidget {
               
               // Description
               Text(
-                "Vizo sudah mengirimkan tiket rahasia ke email kamu. Klik link di dalamnya untuk mengaktifkan kekuatan penuh VisionSafe!",
+                "Vizo sedang memantau sinyal dari email kamu.\n\nBuka email verifikasi dari HP atau Laptop kamu, dan klik link di dalamnya. Layar ini akan otomatis berpindah jika verifikasi berhasil ditekan!",
                 style: AppTextStyles.bodyMedium.copyWith(
                   color: AppColors.grey,
                   height: 1.5,
@@ -99,7 +151,10 @@ class WaitingVerificationView extends StatelessWidget {
               const SizedBox(height: 16),
               
               TextButton(
-                onPressed: () => Get.offAllNamed(Routes.login),
+                onPressed: () {
+                  _pollingTimer?.cancel();
+                  Get.offAllNamed(Routes.login);
+                },
                 style: TextButton.styleFrom(
                   foregroundColor: AppColors.primary,
                   padding: const EdgeInsets.symmetric(vertical: 16),

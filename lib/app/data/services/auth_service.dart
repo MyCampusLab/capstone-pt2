@@ -4,6 +4,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:logger/logger.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:visionsafe/app/routes/app_pages.dart';
+import 'package:visionsafe/app/data/providers/vision_service_provider.dart';
 
 /// Layanan Autentikasi Tingkat Enterprise.
 /// Mengintegrasikan Supabase Auth dan Google OAuth.
@@ -14,11 +16,7 @@ class AuthService extends GetxService {
   final Logger _logger = Logger();
   StreamSubscription<AuthState>? _authSubscription;
 
-  // Web Client ID (Wajib untuk handshake Google <-> Supabase)
-  final String _webClientId = '353922058441-j4voev2ai15av984u7sgmd4ba78248b3.apps.googleusercontent.com';
-  
-  // Android Client ID (Untuk stabilitas di perangkat Android)
-  final String _androidClientId = '353922058441-ljqqf9nh8rtnsjnqvl1k5oqbntsf6l5j.apps.googleusercontent.com';
+  // Menggunakan OAuthRedirect flow, client IDs dihapus karena tidak digunakan di sisi flutter natively
 
   final isLoggedIn = false.obs;
   final currentUser = Rxn<User>();
@@ -28,6 +26,15 @@ class AuthService extends GetxService {
     super.onInit();
     _checkInitialSession();
     _listenToAuthState();
+    
+    // Global Router Observer untuk Auth State
+    ever(isLoggedIn, (bool loggedIn) {
+      if (loggedIn) {
+        Get.offAllNamed(Routes.mainWrapper);
+      } else {
+        Get.offAllNamed(Routes.login);
+      }
+    });
   }
 
   void _checkInitialSession() {
@@ -158,6 +165,13 @@ class AuthService extends GetxService {
       } catch (e) {
         _logger.w('Gagal sign out dari Google (mungkin login via email): $e');
       }
+      
+      try {
+        final visionProvider = Get.find<VisionServiceProvider>();
+        if (await visionProvider.isServiceRunning()) {
+          await visionProvider.stopService();
+        }
+      } catch (_) {}
       
       _logger.i('Sesi Berakhir: User Logged Out');
     } catch (e) {

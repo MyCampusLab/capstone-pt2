@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:get/get.dart';
 import 'package:visionsafe/app/data/services/reward_service.dart';
 import 'package:visionsafe/app/data/services/supabase_service.dart';
@@ -24,11 +25,18 @@ class StatsController extends GetxController {
   final leaderboard = <ProfileModel>[].obs;
   final isLoading = false.obs;
   final telemetryService = Get.find<TelemetryService>();
+  StreamSubscription? _analyticsSubscription;
 
   @override
   void onInit() {
     super.onInit();
     refreshData();
+  }
+
+  @override
+  void onClose() {
+    _analyticsSubscription?.cancel();
+    super.onClose();
   }
 
   Future<void> refreshData() async {
@@ -56,31 +64,40 @@ class StatsController extends GetxController {
 
   Future<void> fetchCloudAnalytics() async {
     try {
-      // Mengambil data cloud (Limit ditingkatkan ke 1000 untuk cakupan lebih luas)
-      final cloudData = await _supabaseService.getAnalyticsData(limit: 1000);
-      
-      // MENGGABUNGKAN DATA: Cloud + Local Hive (Data yang belum tersinkron)
-      final localLogs = telemetryService.getAllLocalLogs();
-      final List<Map<String, dynamic>> combinedLogs = List.from(cloudData);
-      
-      for (var log in localLogs) {
-        combinedLogs.add({
-          'created_at': log.timestamp.toIso8601String(),
-          'is_violation': log.isViolation,
-          'distance': log.distance,
-        });
-      }
+      // Dengarkan perubahan secara real-time dari Supabase (WebSockets)
+      _analyticsSubscription?.cancel();
+      _analyticsSubscription = _supabaseService.watchAnalyticsData(limit: 1000).listen(
+        (cloudData) {
+          // Setiap kali ada data baru dari database (anak terdeteksi), 
+          // Stream ini akan otomatis terpanggil.
+          
+          // MENGGABUNGKAN DATA: Cloud + Local Hive
+          final localLogs = telemetryService.getAllLocalLogs();
+          final List<Map<String, dynamic>> combinedLogs = List.from(cloudData);
+          
+          for (var log in localLogs) {
+            combinedLogs.add({
+              'created_at': log.timestamp.toIso8601String(),
+              'is_violation': log.isViolation,
+              'distance': log.distance,
+            });
+          }
 
-      if (combinedLogs.isNotEmpty) {
-        _processHeatmapData(combinedLogs);
-      } else {
-        _resetToEmptyState();
-      }
+          if (combinedLogs.isNotEmpty) {
+            _processHeatmapData(combinedLogs);
+          } else {
+            _resetToEmptyState();
+          }
+        },
+        onError: (error) {
+          Get.log('Error Stream Analytics: $error');
+          _resetToEmptyState();
+        },
+      );
     } catch (e) {
       _resetToEmptyState();
     }
   }
-
   void _resetToEmptyState() {
     healthScore.value = 100;
     screenTimeHours.value = 0.0;
@@ -99,19 +116,39 @@ class StatsController extends GetxController {
     }
 
     int totalViolations = 0;
+    int totalHeartbeats = 0;
     double sumDistance = 0.0;
     int distanceCount = 0;
+    
+    final now = DateTime.now();
+    final Map<int, List<bool>> weeklyMap = {for (var i = 0; i < 7; i++) i: []};
     
     for (var log in logs) {
       try {
         final createdAtStr = log['created_at']?.toString();
         if (createdAtStr == null) continue;
         
-        // Pastikan konversi ke Local Time untuk Heatmap yang akurat bagi user
         final createdAt = DateTime.parse(createdAtStr).toLocal();
         final isViolation = log['is_violation'] as bool? ?? false;
         
-        if (isViolation) totalViolations++;
+        // --- WEEKLY CHART LOGIC (7 Hari Terakhir) ---
+        final differenceInDays = now.difference(createdAt).inDays;
+        if (differenceInDays >= 0 && differenceInDays < 7) {
+            // Index 6 adalah hari ini (now), Index 0 adalah 6 hari yang lalu.
+            final index = 6 - differenceInDays;
+            weeklyMap[index]?.add(isViolation);
+        }
+        
+        // --- TODAY FILTER (Super Penting untuk Ringkasan Hari Ini) ---
+        if (createdAt.year != now.year || createdAt.month != now.month || createdAt.day != now.day) {
+            continue;
+        }
+        
+        if (isViolation) {
+            totalViolations++;
+        } else {
+            totalHeartbeats++;
+        }
         
         final distVal = log['distance'];
         if (distVal != null) {
@@ -134,17 +171,25 @@ class StatsController extends GetxController {
 
     final int logCount = logs.length;
     if (logCount > 0) {
-      final double violationRate = totalViolations / logCount;
-      final double rawScore = 100 - (violationRate * 100);
+      // RUMUS BARU (Smart Event-Driven Architecture):
+      // Heartbeat mewakili 60 detik aktivitas aman.
+      // Violation mewakili 15 detik aktivitas bahaya.
+      final int totalScreenTimeSeconds = (totalHeartbeats * 60) + (totalViolations * 15);
+      
+      // Menghitung persentase waktu bahaya dari total waktu
+      final int totalViolationSeconds = totalViolations * 15;
+      final double timeBasedViolationRate = totalScreenTimeSeconds > 0 
+          ? (totalViolationSeconds / totalScreenTimeSeconds) 
+          : 0.0;
+          
+      final double rawScore = 100 - (timeBasedViolationRate * 100);
       healthScore.value = rawScore.isNaN || rawScore.isInfinite 
           ? 100 
           : rawScore.clamp(0, 100).toInt();
       
-      // RUMUS DUNIA NYATA: 1 Log = 1 Detik (Sesuai Native Sampling Rate terbaru)
-      final double rawScreenTime = logCount / 3600;
+      final double rawScreenTime = totalScreenTimeSeconds / 3600;
       screenTimeHours.value = rawScreenTime.isNaN || rawScreenTime.isInfinite ? 0.0 : rawScreenTime;
       
-      // Rasio Istirahat Ideal: 20% dari total screen time (Standar Medis 20-20-20)
       restTimeHours.value = screenTimeHours.value * 0.2;
     }
 
@@ -156,7 +201,17 @@ class StatsController extends GetxController {
         newIntensity[i] = rawIntensity.isNaN || rawIntensity.isInfinite ? 0.0 : rawIntensity;
       }
     }
-    
     hourlyViolations.value = newIntensity;
+    
+    // --- POPULATE WEEKLY CHART ---
+    final List<double> newWeekly = List.filled(7, 0.0);
+    for (var i = 0; i < 7; i++) {
+      final dailyList = weeklyMap[i]!;
+      if (dailyList.isNotEmpty) {
+        final double rate = dailyList.where((v) => v).length / dailyList.length;
+        newWeekly[i] = rate.isNaN || rate.isInfinite ? 0.0 : rate;
+      }
+    }
+    weeklyData.value = newWeekly;
   }
 }

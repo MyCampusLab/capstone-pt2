@@ -110,9 +110,24 @@ class TelemetryService extends GetxService {
           lastUiUpdateTime = now;
         }
 
-        // 2. Database & Sync Throttle: 5000ms (5 seconds) to prevent Battery Drain
-        // This stops the app from saving 30 frames per second to the local database!
-        if (now.difference(lastDbSaveTime).inMilliseconds >= 5000) {
+        // 2. Database & Sync Logic: Smart Event-Driven Architecture (Skalabilitas Enterprise)
+        // Menyelesaikan masalah "Database Bloat" & "Server Bankruptcy".
+        bool shouldSave = false;
+        
+        // A. Pelanggaran (Violation Trigger): Simpan instan, tapi batasi maksimal 1 log per 15 detik agar tidak spam DB
+        if (model.isViolation) {
+          if (now.difference(lastDbSaveTime).inMilliseconds >= 15000) {
+            shouldSave = true;
+          }
+        } 
+        // B. Heartbeat (Aman): Hanya simpan 1 sampel setiap 1 menit untuk membuktikan anak sedang main.
+        else {
+          if (now.difference(lastDbSaveTime).inMilliseconds >= 60000) {
+            shouldSave = true;
+          }
+        }
+
+        if (shouldSave) {
           _saveToLocal(model);
           lastDbSaveTime = now;
         }

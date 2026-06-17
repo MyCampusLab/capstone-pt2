@@ -21,6 +21,9 @@ class QuestsController extends GetxController {
   // Real-time metrics untuk tracking quest
   final sessionBlinks = 0.obs;
   final sessionFocusMinutes = 0.0.obs;
+  
+  bool _blinkQuestCompleted = false;
+  bool _focusQuestCompleted = false;
 
   // Quest dinamis yang terhitung otomatis
   final quests = <Map<String, dynamic>>[].obs;
@@ -81,11 +84,15 @@ class QuestsController extends GetxController {
   }
 
   void _checkQuestProgress() {
-    if (sessionBlinks.value == 50) {
-      VToast.show("Quest Complete!", "You've finished Blink Marathon!", state: VizoState.happy);
+    if (!_blinkQuestCompleted && sessionBlinks.value >= 50) {
+      _blinkQuestCompleted = true;
+      _rewardService.addXp(50);
+      VToast.show("Quest Complete!", "You've finished Blink Marathon! +50 XP", state: VizoState.happy);
     }
-    if (sessionFocusMinutes.value >= 10.0 && sessionFocusMinutes.value < 10.1) {
-      VToast.show("Master of Focus!", "10 minutes safely guarded.", state: VizoState.focused);
+    if (!_focusQuestCompleted && sessionFocusMinutes.value >= 10.0) {
+      _focusQuestCompleted = true;
+      _rewardService.addXp(100);
+      VToast.show("Master of Focus!", "10 minutes safely guarded. +100 XP", state: VizoState.focused);
     }
   }
 
