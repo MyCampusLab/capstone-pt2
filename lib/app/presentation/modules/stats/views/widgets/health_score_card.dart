@@ -3,8 +3,9 @@ import 'package:get/get.dart';
 import 'package:visionsafe/app/presentation/modules/stats/controllers/stats_controller.dart';
 import 'package:visionsafe/app/core/values/app_text_styles.dart';
 
-class HealthScoreCard extends GetView<StatsController> {
-  const HealthScoreCard({super.key});
+class HealthScoreCard extends StatelessWidget {
+  final StatsController controller;
+  const HealthScoreCard({super.key, required this.controller});
 
   @override
   Widget build(BuildContext context) {
@@ -75,18 +76,48 @@ class HealthScoreCard extends GetView<StatsController> {
                     ),
                   ),
                   
-                  // Right side illustration (Mascot Profile)
-                  Container(
-                    width: 100,
-                    height: 100,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withAlpha(30),
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white30, width: 2),
-                    ),
-                    child: const Center(
-                      child: Icon(Icons.verified_user_rounded, color: Colors.white, size: 50),
-                    ),
+                  // Right side illustration (Mascot Profile / Shield)
+                  Stack(
+                    alignment: Alignment.topRight,
+                    children: [
+                      Container(
+                        width: 100,
+                        height: 100,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withAlpha(30),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white30, width: 2),
+                        ),
+                        child: const Center(
+                          child: Icon(Icons.shield_rounded, color: Colors.white, size: 50),
+                        ),
+                      ),
+                      // Indikator Live Sync (Badge)
+                      Obx(() {
+                        final isSyncActive = controller.isLiveSyncActive.value;
+                        return Container(
+                          margin: const EdgeInsets.only(top: 2, right: 2),
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: isSyncActive ? const Color(0xFF00E676) : const Color(0xFFFF3D00),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: const Color(0xFF003366), width: 3),
+                            boxShadow: [
+                              BoxShadow(
+                                color: (isSyncActive ? const Color(0xFF00E676) : const Color(0xFFFF3D00)).withAlpha(150),
+                                blurRadius: 8,
+                                spreadRadius: 2,
+                              )
+                            ],
+                          ),
+                          child: Icon(
+                            isSyncActive ? Icons.wifi_tethering_rounded : Icons.wifi_off_rounded,
+                            color: const Color(0xFF003366),
+                            size: 14,
+                          ),
+                        );
+                      }),
+                    ],
                   ),
                 ],
               ),

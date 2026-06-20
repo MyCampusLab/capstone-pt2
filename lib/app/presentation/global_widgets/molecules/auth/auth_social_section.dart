@@ -74,6 +74,7 @@ class _AuthSocialSectionState extends State<AuthSocialSection> {
                 Image.network(
                   'https://www.gstatic.com/images/branding/product/2x/googleg_48dp.png',
                   height: 24,
+                  errorBuilder: (context, error, stackTrace) => const Icon(Icons.g_mobiledata_rounded, size: 28, color: AppColors.primaryDark),
                 ),
                 const SizedBox(width: 12),
                 Text(

@@ -5,8 +5,9 @@ import 'package:visionsafe/app/core/values/app_text_styles.dart';
 import 'package:visionsafe/app/presentation/global_widgets/atoms/v_card.dart';
 import 'package:visionsafe/app/presentation/modules/stats/controllers/stats_controller.dart';
 
-class LeaderboardWidget extends GetView<StatsController> {
-  const LeaderboardWidget({super.key});
+class LeaderboardWidget extends StatelessWidget {
+  final StatsController controller;
+  const LeaderboardWidget({super.key, required this.controller});
 
   @override
   Widget build(BuildContext context) {
@@ -68,6 +69,7 @@ class LeaderboardWidget extends GetView<StatsController> {
                         radius: 18,
                         backgroundColor: AppColors.primary.withAlpha(50),
                         backgroundImage: user.avatarUrl != null ? NetworkImage(user.avatarUrl!) : null,
+                        onBackgroundImageError: user.avatarUrl != null ? (e, s) {} : null,
                         child: user.avatarUrl == null
                             ? Text(
                                 user.fullName != null && user.fullName!.isNotEmpty

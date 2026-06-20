@@ -36,7 +36,7 @@ class BaseScreenTemplate extends StatelessWidget {
   Widget build(BuildContext context) {
     Widget content = SingleChildScrollView(
       physics: physics,
-      clipBehavior: Clip.none,
+      clipBehavior: Clip.hardEdge,
       child: SafeArea(
         top: appBar == null, // Safe area only if no app bar
         bottom: false,

@@ -6,6 +6,7 @@ import 'widgets/quests_journey_card.dart';
 import 'package:visionsafe/app/presentation/global_widgets/templates/base_screen_template.dart';
 
 import 'package:visionsafe/app/presentation/global_widgets/molecules/v_app_header.dart';
+import 'package:visionsafe/app/presentation/global_widgets/atoms/v_skeleton.dart';
 
 /// QuestsView: Gabungan Quests dan Koleksi Hero (Hero Journey).
 /// Desain Premium: Bebas overflow, padat, dan mengikuti tema Retro-Glass.
@@ -24,7 +25,7 @@ class QuestsView extends GetView<QuestsController> {
           const QuestsHeader(),
           const SizedBox(height: 24),
           if (controller.isLoading.value)
-            const Center(child: CircularProgressIndicator())
+            const VSkeleton(height: 300)
           else
             const QuestsJourneyCard(),
         ],

@@ -5,8 +5,9 @@ import 'package:visionsafe/app/presentation/global_widgets/atoms/v_card.dart';
 import 'package:visionsafe/app/core/values/app_colors.dart';
 import 'package:visionsafe/app/core/values/app_text_styles.dart';
 
-class StatMetricsGrid extends GetView<StatsController> {
-  const StatMetricsGrid({super.key});
+class StatMetricsGrid extends StatelessWidget {
+  final StatsController controller;
+  const StatMetricsGrid({super.key, required this.controller});
 
   @override
   Widget build(BuildContext context) {

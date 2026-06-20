@@ -125,54 +125,58 @@ class _VInputState extends State<VInput> {
                 ),
             ],
           ),
-          child: TextField(
-            focusNode: _focusNode,
-            controller: widget.controller,
-            obscureText: _obscureText,
-            keyboardType: widget.keyboardType,
-            autofillHints: widget.autofillHints,
-            textInputAction: widget.textInputAction,
-            onSubmitted: widget.onSubmitted,
-            style: AppTextStyles.bodyBold.copyWith(
-              color: AppColors.charcoal,
-              fontSize: 15,
-            ),
-            decoration: InputDecoration(
-              hintText: widget.hint,
-              hintStyle: AppTextStyles.caption.copyWith(
-                color: AppColors.grey.withValues(alpha: 0.5),
-                fontWeight: FontWeight.w500,
+          child: Semantics(
+            identifier: widget.hint,
+            label: widget.hint,
+            child: TextField(
+              focusNode: _focusNode,
+              controller: widget.controller,
+              obscureText: _obscureText,
+              keyboardType: widget.keyboardType,
+              autofillHints: widget.autofillHints,
+              textInputAction: widget.textInputAction,
+              onSubmitted: widget.onSubmitted,
+              style: AppTextStyles.bodyBold.copyWith(
+                color: AppColors.charcoal,
+                fontSize: 15,
               ),
-              prefixIcon: widget.prefixIcon != null
-                  ? AnimatedScale(
-                      scale: _isFocused ? 1.1 : 1.0,
-                      duration: AppDesign.fast,
-                      child: Icon(
-                        widget.prefixIcon,
-                        color: _isFocused ? AppColors.primary : AppColors.primaryDark.withValues(alpha: 0.6),
-                        size: 22,
-                      ),
-                    )
-                  : null,
-              suffixIcon: widget.isPassword
-                  ? IconButton(
-                      icon: Icon(
-                        _obscureText ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                        color: _isFocused ? AppColors.primary : AppColors.primaryDark.withValues(alpha: 0.6),
-                        size: 20,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          _obscureText = !_obscureText;
-                        });
-                      },
-                    )
-                  : null,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: AppDesign.space20,
-                vertical: AppDesign.space20,
+              decoration: InputDecoration(
+                hintText: widget.hint,
+                hintStyle: AppTextStyles.caption.copyWith(
+                  color: AppColors.grey.withValues(alpha: 0.5),
+                  fontWeight: FontWeight.w500,
+                ),
+                prefixIcon: widget.prefixIcon != null
+                    ? AnimatedScale(
+                        scale: _isFocused ? 1.1 : 1.0,
+                        duration: AppDesign.fast,
+                        child: Icon(
+                          widget.prefixIcon,
+                          color: _isFocused ? AppColors.primary : AppColors.primaryDark.withValues(alpha: 0.6),
+                          size: 22,
+                        ),
+                      )
+                    : null,
+                suffixIcon: widget.isPassword
+                    ? IconButton(
+                        icon: Icon(
+                          _obscureText ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                          color: _isFocused ? AppColors.primary : AppColors.primaryDark.withValues(alpha: 0.6),
+                          size: 20,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _obscureText = !_obscureText;
+                          });
+                        },
+                      )
+                    : null,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: AppDesign.space20,
+                  vertical: AppDesign.space20,
+                ),
+                border: InputBorder.none,
               ),
-              border: InputBorder.none,
             ),
           ),
         ),

@@ -17,6 +17,9 @@ import 'package:visionsafe/app/presentation/global_widgets/molecules/v_dialog.da
 import 'package:visionsafe/app/presentation/global_widgets/molecules/v_toast.dart';
 import 'package:visionsafe/app/presentation/global_widgets/molecules/vizo_mascot.dart';
 import 'package:visionsafe/app/core/values/app_colors.dart';
+import 'package:visionsafe/app/core/values/app_text_styles.dart';
+import '../views/dialogs/home_dialog_helper.dart';
+import 'package:visionsafe/app/presentation/global_widgets/atoms/v_button.dart';
 
 class HomeController extends GetxController with WidgetsBindingObserver {
   final _logger = Logger();
@@ -33,6 +36,8 @@ class HomeController extends GetxController with WidgetsBindingObserver {
   
   final userProfile = Rxn<ProfileModel>();
   DateTime? _lastHapticTime;
+  Timer? _tamperWatchdog;
+  Timer? _snoozeTimer;
 
   // Real-time getters linked to TelemetryRepository
   double get eyeHealthScore => _repository.calculateEyeHealthScore();
@@ -45,25 +50,26 @@ class HomeController extends GetxController with WidgetsBindingObserver {
   double get currentDistance => telemetryService.currentDistance.value;
   bool get isViolation => telemetryService.isViolation.value;
 
-  // Analisis Celah & Heartbeat
+  // Analisis Celah & Heartbeat (Refined for Local UI)
   String get connectionStatusText {
-    final lastSync = _configService.lastCloudSyncTime;
-    if (lastSync == null) return "Menunggu Data Pertama";
-
-    final diff = DateTime.now().difference(lastSync);
-    if (diff.inMinutes < 15) return "Online & Aktif";
-    if (diff.inHours < 24) return "Sedang Offline";
-    return "Dimatikan Paksa / Offline Lama";
+    return isServiceRunning ? "Sistem Aktif" : "Perlindungan Mati";
   }
 
   Color get connectionStatusColor {
-    final lastSync = _configService.lastCloudSyncTime;
-    if (lastSync == null) return Colors.grey;
+    return isServiceRunning ? AppColors.success : AppColors.danger;
+  }
 
-    final diff = DateTime.now().difference(lastSync);
-    if (diff.inMinutes < 15) return Colors.green;
-    if (diff.inHours < 24) return Colors.amber;
-    return Colors.red;
+  // Internet & Sync Status
+  String get cloudSyncStatusText {
+    if (!isBackendConnected.value) return "Offline (Data Lokal)";
+    if (pendingSyncCount.value > 0) return "Menyinkronkan ($pendingSyncCount)";
+    return "Tersinkronisasi";
+  }
+
+  Color get cloudSyncStatusColor {
+    if (!isBackendConnected.value) return Colors.orange;
+    if (pendingSyncCount.value > 0) return Colors.blue;
+    return AppColors.success;
   }
 
   // AI INTELLIGENCE: Mengambil keputusan state maskot secara cerdas (Cloud + Local Context)
@@ -95,6 +101,7 @@ class HomeController extends GetxController with WidgetsBindingObserver {
     _checkInitialPermissions();
     _startConnectivityPolling();
     _startSyncMonitoring();
+    _startAntiTamperWatchdog();
     _listenToProfile();
 
     ever(telemetryService.currentDistance, _handleUxFeedback);
@@ -104,6 +111,29 @@ class HomeController extends GetxController with WidgetsBindingObserver {
   void _startSyncMonitoring() {
     _updatePendingSync();
     Timer.periodic(const Duration(seconds: 10), (_) => _updatePendingSync());
+  }
+
+  void _startAntiTamperWatchdog() {
+    _tamperWatchdog = Timer.periodic(const Duration(seconds: 30), (timer) async {
+      if (_configService.isDisciplineModeEnabled.value) {
+        final isAccessibilityEnabled = await _serviceProvider.checkAccessibilityPermission();
+        if (!isAccessibilityEnabled) {
+          _logger.w("ANTI-TAMPER: Aksesibilitas dimatikan paksa di luar aplikasi!");
+          _configService.toggleDisciplineMode(false); // Matikan toggle sementara di UI
+          
+          VDialog.show(
+            title: "Peringatan Keamanan!",
+            message: "Izin Aksesibilitas (Mode Disiplin) telah dimatikan secara paksa dari pengaturan HP (Kemungkinan Anak Curang!). Ini merupakan pelanggaran kritis.",
+            icon: Icons.gpp_bad_rounded,
+            iconColor: Colors.red,
+            confirmLabel: "BUKA PENGATURAN",
+            onConfirm: () {
+               Get.back();
+            }
+          );
+        }
+      }
+    });
   }
 
   void _updatePendingSync() {
@@ -125,6 +155,8 @@ class HomeController extends GetxController with WidgetsBindingObserver {
   void onClose() {
     WidgetsBinding.instance.removeObserver(this);
     _profileSubscription?.cancel();
+    _tamperWatchdog?.cancel();
+    _snoozeTimer?.cancel();
     super.onClose();
   }
 
@@ -179,38 +211,6 @@ class HomeController extends GetxController with WidgetsBindingObserver {
     dailyViolationMinutes.value = _repository.calculateViolationMinutesToday();
   }
 
-  Future<void> addXp(int amount) async {
-    final profile = userProfile.value;
-    if (profile == null) return;
-
-    final currentXp = profile.xp;
-    final newXp = currentXp + amount;
-    
-    int newLevel = (newXp ~/ 100) + 1;
-
-    final updatedProfile = profile.copyWith(
-      xp: newXp,
-      level: newLevel,
-      lastActiveAt: DateTime.now(),
-    );
-
-    // Update UI immediately (Reactive GetX state)
-    userProfile.value = updatedProfile;
-
-    // Show LEVEL UP toast if level increased!
-    if (newLevel > profile.level) {
-      HapticFeedback.vibrate();
-      VToast.show(
-        "LEVEL UP!", 
-        "Selamat! Kamu naik ke Level $newLevel!", 
-        state: VizoState.happy
-      );
-    }
-
-    // Persist to Hive cache and synchronize to Supabase
-    await _profileRepo.updateProfile(updatedProfile);
-  }
-
   void goToCalibration() => Get.toNamed(Routes.calibration);
 
   Future<void> _checkInitialPermissions() async {
@@ -223,27 +223,12 @@ class HomeController extends GetxController with WidgetsBindingObserver {
     final previousState = _configService.isServiceEnabled.value;
     
     if (previousState) {
-      // PROSES MATIKAN: Harus lewat validasi PIN
-      final currentPin = _configService.parentPin;
-      
-      if (currentPin == null) {
-        // Belum ada PIN, paksa buat PIN dulu
-        _showPinDialog(
-          title: "Buat PIN Orang Tua",
-          message: "Buat 4-digit PIN agar perlindungan tidak bisa dimatikan sembarangan.",
-          isSetup: true,
-        );
-      } else {
-        // Sudah ada PIN, minta masukkan
-        _showPinDialog(
-          title: "Masukkan PIN",
-          message: "Masukkan 4-digit PIN Orang Tua untuk mematikan perlindungan.",
-          isSetup: false,
-          correctPin: currentPin,
-        );
-      }
+      // PROSES MATIKAN/JEDA: Jangan biarkan user lupa menyalakan!
+      _showSnoozeOptions();
     } else {
       // PROSES NYALAKAN: Langsung gas, optimis.
+      _snoozeTimer?.cancel(); // Batalkan snooze jika dinyalakan manual
+
       _configService.toggleService(true);
       HapticFeedback.mediumImpact();
       
@@ -277,10 +262,11 @@ class HomeController extends GetxController with WidgetsBindingObserver {
           ),
           SizedBox(height: 4),
           Text(
+            "• Pemantauan berjalan konstan di LATAR BELAKANG (Foreground Service) meskipun aplikasi ditutup.\n"
             "• Pemrosesan gambar dilakukan 100% LOKAL di perangkat Anda.\n"
-            "• TIDAK ADA foto, video, atau data biometrik wajah yang disimpan.\n"
-            "• TIDAK ADA gambar yang dikirim ke server/cloud kami.\n"
-            "• Kami hanya memproses data angka jarak (cm) untuk melindungi penglihatan Anda.",
+            "• TIDAK ADA foto, video, atau data biometrik yang disimpan.\n"
+            "• TIDAK ADA gambar yang dikirim ke server/internet kami.\n"
+            "• Kami murni hanya mengonversi jarak menjadi angka (cm).",
             style: TextStyle(fontSize: 14, height: 1.4),
           ),
         ],
@@ -298,42 +284,150 @@ class HomeController extends GetxController with WidgetsBindingObserver {
 
   Future<void> _executeStartService() async {
     try {
-      if (!await Permission.camera.isGranted && !(await Permission.camera.request().isGranted)) {
-        _configService.toggleService(false);
-        _showPermissionError("Kamera");
-        return;
+      // 1. KAMERA
+      if (!await Permission.camera.isGranted) {
+        final proceed = await HomeDialogHelper.showPermissionExplanation(
+          title: "Izin Kamera Depan",
+          explanation: "Kami membutuhkan akses Kamera Depan untuk mendeteksi jarak wajah secara lokal. Tidak ada video yang direkam atau dikirim ke internet.",
+          benefit: "VisionSafe bisa mengukur dengan akurat kapan mata Anda terlalu dekat dengan layar.",
+          icon: Icons.camera_alt_rounded,
+        );
+        if (!proceed || !(await Permission.camera.request().isGranted)) {
+          _configService.toggleService(false);
+          _showPermissionError("Kamera");
+          return;
+        }
       }
-      if (!await Permission.systemAlertWindow.isGranted && !(await Permission.systemAlertWindow.request().isGranted)) {
-        _configService.toggleService(false);
-        _showPermissionError("Tampilkan di Atas Aplikasi Lain");
-        return;
+
+      // 2. TAMPIL DI ATAS APLIKASI LAIN (OVERLAY)
+      if (!await Permission.systemAlertWindow.isGranted) {
+        final proceed = await HomeDialogHelper.showPermissionExplanation(
+          title: "Izin Tampil di Layar",
+          explanation: "Izin ini (Overlay / System Alert Window) memungkinkan kami menampilkan efek peringatan di atas aplikasi lain yang sedang Anda buka.",
+          benefit: "Anda akan tetap mendapat peringatan jarak aman meskipun sedang bermain game atau menonton video.",
+          icon: Icons.layers_rounded,
+        );
+        if (!proceed || !(await Permission.systemAlertWindow.request().isGranted)) {
+          _configService.toggleService(false);
+          _showPermissionError("Tampilkan di Atas Aplikasi Lain");
+          return;
+        }
       }
+
+      // 3. NOTIFIKASI
       if (!await Permission.notification.isGranted) {
-        await Permission.notification.request();
+        final proceed = await HomeDialogHelper.showPermissionExplanation(
+          title: "Izin Notifikasi",
+          explanation: "Agar aplikasi dapat mengirim peringatan sistem dan notifikasi teguran (Nudge) dari anggota keluarga Anda secara real-time.",
+          benefit: "Anda tidak akan melewatkan pesan penting atau jadwal istirahat mata Anda.",
+          icon: Icons.notifications_active_rounded,
+        );
+        if (proceed) {
+          await Permission.notification.request();
+        }
       }
       
-      // Pengecekan Optimasi Baterai (PENTING untuk menjaga Background Service tetap hidup)
-      final isIgnoringBattery = await _serviceProvider.checkBatteryOptimization();
-      if (!isIgnoringBattery) {
-        _configService.toggleService(false);
-        VDialog.show(
-          title: "Optimasi Baterai Terdeteksi",
-          message: "Sistem Android akan mematikan perlindungan ini secara diam-diam. Izinkan aplikasi berjalan tanpa batas baterai?",
-          confirmLabel: "IZINKAN",
-          onConfirm: () async {
-            Get.back();
-            await _serviceProvider.requestIgnoreBatteryOptimization();
-          },
-          cancelLabel: "NANTI",
+      // 4. BATTERY OPTIMIZATION (Untuk Mode Disiplin / Latar Belakang)
+      if (!await Permission.ignoreBatteryOptimizations.isGranted) {
+        final proceed = await HomeDialogHelper.showPermissionExplanation(
+          title: "Izin Latar Belakang",
+          explanation: "Sistem Android terkadang mematikan aplikasi secara sepihak untuk menghemat baterai.",
+          benefit: "Penting agar AI VisionSafe terus melindungi mata anak Anda tanpa terputus secara tiba-tiba.",
+          icon: Icons.battery_charging_full_rounded,
         );
-        return;
+        if (proceed) {
+          await Permission.ignoreBatteryOptimizations.request();
+        }
       }
 
       await _serviceProvider.startService();
+      await _serviceProvider.updateThreshold(_configService.threshold.value);
       VToast.show("VisionSafe", "Layanan Penjaga Mata Aktif!", state: VizoState.happy);
     } catch (e) {
       _configService.toggleService(false);
       VToast.show("Ups!", "Terjadi kesalahan: ${e.toString()}", state: VizoState.intervention);
+    }
+  }
+
+  void _showSnoozeOptions() {
+    Get.bottomSheet(
+      Container(
+        padding: const EdgeInsets.all(24),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text("Jeda Proteksi?", style: AppTextStyles.heading2.copyWith(color: AppColors.primaryDark)),
+            const SizedBox(height: 8),
+            Text("Pilih durasi jeda agar Vizo bisa otomatis menyala kembali nanti.", style: AppTextStyles.bodyMedium),
+            const SizedBox(height: 24),
+            ListTile(
+              leading: const Icon(Icons.timer_rounded, color: AppColors.secondary),
+              title: const Text("Jeda 30 Menit"),
+              subtitle: const Text("Cocok untuk ujian / membaca fokus."),
+              onTap: () {
+                Get.back();
+                _snoozeService(30);
+              },
+            ),
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.movie_filter_rounded, color: AppColors.secondary),
+              title: const Text("Jeda 2 Jam"),
+              subtitle: const Text("Cocok saat menonton film panjang."),
+              onTap: () {
+                Get.back();
+                _snoozeService(120);
+              },
+            ),
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.power_settings_new_rounded, color: Colors.red),
+              title: const Text("Matikan Sepenuhnya", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+              subtitle: const Text("Membutuhkan PIN Orang Tua."),
+              onTap: () {
+                Get.back();
+                _promptHardStop();
+              },
+            ),
+          ],
+        ),
+      ),
+      isScrollControlled: true,
+    );
+  }
+
+  void _snoozeService(int minutes) {
+    _executeStopService();
+    VToast.show("Proteksi Dijeda", "Vizo akan tidur selama $minutes menit.", state: VizoState.sleeping);
+    _snoozeTimer?.cancel();
+    _snoozeTimer = Timer(Duration(minutes: minutes), () {
+      if (!_configService.isServiceEnabled.value) {
+        _configService.toggleService(true);
+        _executeStartService();
+      }
+    });
+  }
+
+  void _promptHardStop() {
+    final currentPin = _configService.parentPin;
+    if (currentPin == null) {
+      _showPinDialog(
+        title: "Buat PIN Orang Tua",
+        message: "Buat 4-digit PIN agar perlindungan tidak bisa dimatikan sembarangan.",
+        isSetup: true,
+      );
+    } else {
+      _showPinDialog(
+        title: "Masukkan PIN",
+        message: "Masukkan 4-digit PIN Orang Tua untuk mematikan perlindungan.",
+        isSetup: false,
+        correctPin: currentPin,
+      );
     }
   }
 
@@ -367,7 +461,7 @@ class HomeController extends GetxController with WidgetsBindingObserver {
           ),
         ],
       ),
-      confirm: ElevatedButton(
+      confirm: VButton(
         onPressed: () async {
           final input = pinController.text;
           if (input.length != 4) {
@@ -389,7 +483,7 @@ class HomeController extends GetxController with WidgetsBindingObserver {
             }
           }
         },
-        child: const Text("Lanjut"),
+        label: "Lanjut",
       ),
       cancel: TextButton(
         onPressed: () => Get.back(),

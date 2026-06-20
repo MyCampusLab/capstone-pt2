@@ -4,9 +4,9 @@ import 'package:visionsafe/app/core/values/app_colors.dart';
 import 'package:visionsafe/app/core/values/app_text_styles.dart';
 import 'package:visionsafe/app/presentation/modules/quests/controllers/quests_controller.dart';
 import 'package:visionsafe/app/data/services/reward_service.dart';
-import 'package:visionsafe/app/presentation/global_widgets/molecules/v_dialog.dart';
 import 'quest_task_tile.dart';
 import 'sticker_grid_item.dart';
+import 'hero_showcase_dialog.dart';
 
 class QuestsJourneyCard extends StatelessWidget {
   const QuestsJourneyCard({super.key});
@@ -148,23 +148,27 @@ class QuestsJourneyCard extends StatelessWidget {
                         onTap: hero == null ? null : () {
                           if (!hero.isUnlocked) {
                             final price = rewardService.getStickerPrice(hero.id);
-                            VDialog.show(
-                              title: "Unlock Hero",
-                              message: "Apakah kamu ingin mengaktifkan hero kustom ${hero.title}?\n\nHarga: $price XP",
-                              confirmLabel: "BELI HERO",
-                              cancelLabel: "BATAL",
-                              icon: Icons.shopping_bag_outlined,
-                              iconColor: AppColors.warning,
+                            HeroShowcaseDialog.show(
+                              sticker: hero,
+                              isPurchase: true,
+                              price: price,
                               onConfirm: () => controller.purchaseHero(hero.id),
                             );
                           } else {
-                            VDialog.show(
-                              title: hero.title.toUpperCase(),
-                              message: "${hero.description}\n\nStatus: TELAH TERBUKA & DI-SET AKTIF!",
-                              confirmLabel: "MANTAP!",
-                              icon: Icons.workspace_premium_rounded,
-                              iconColor: AppColors.success,
-                            );
+                            if (hero.isEquipped) {
+                              HeroShowcaseDialog.show(
+                                sticker: hero,
+                                onConfirm: () {},
+                              );
+                            } else {
+                              HeroShowcaseDialog.show(
+                                sticker: hero,
+                                onConfirm: () {
+                                  rewardService.equipSticker(hero.id);
+                                  controller.refreshQuestData();
+                                },
+                              );
+                            }
                           }
                         },
                       ),

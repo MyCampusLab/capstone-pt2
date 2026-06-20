@@ -167,8 +167,10 @@ class _LiveVizoRadarState extends State<LiveVizoRadar> with SingleTickerProvider
       ));
     });
 
-    // Add XP instantly in controller
-    controller.addXp(5);
+    // Add XP instantly in reward service (Throttled/Capped in RewardService if implemented)
+    // FIX: Hapus penambahan XP tak terbatas dari sisi UI untuk mencegah spam tapping.
+    // Animasi visual tetap berjalan untuk interaksi, tapi XP tidak bertambah sembarangan.
+    // Get.find<RewardService>().addXp(5);
 
     // Reset mascot state back to normal after a short delay (1.5 seconds)
     Future.delayed(const Duration(milliseconds: 1500), () {

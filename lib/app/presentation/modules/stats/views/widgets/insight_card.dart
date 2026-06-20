@@ -5,8 +5,9 @@ import 'package:visionsafe/app/core/values/app_text_styles.dart';
 import 'package:visionsafe/app/presentation/global_widgets/atoms/v_card.dart';
 import '../../controllers/stats_controller.dart';
 
-class InsightCard extends GetView<StatsController> {
-  const InsightCard({super.key});
+class InsightCard extends StatelessWidget {
+  final StatsController controller;
+  const InsightCard({super.key, required this.controller});
 
   @override
   Widget build(BuildContext context) {

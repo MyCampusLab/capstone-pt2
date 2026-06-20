@@ -21,20 +21,35 @@ class StatsController extends GetxController {
   final averageDistance = 38.0.obs;
 
   final hourlyViolations = List<double>.filled(24, 0.0).obs;
+  final detailedLogs = <Map<String, dynamic>>[].obs;
   final stickers = <StickerModel>[].obs;
   final leaderboard = <ProfileModel>[].obs;
   final isLoading = false.obs;
+  final isLiveSyncActive = false.obs;
+  final isNudgeCooldown = false.obs; // Anti-Spam Tracker
+  
   final telemetryService = Get.find<TelemetryService>();
   StreamSubscription? _analyticsSubscription;
+  
+  String? targetUserId;
+  String? targetName;
 
   @override
   void onInit() {
     super.onInit();
+    final args = Get.arguments;
+    if (args != null && args is Map) {
+      targetUserId = args['targetUserId'];
+      targetName = args['targetName'];
+    }
     refreshData();
   }
 
+  bool _isDisposed = false;
+
   @override
   void onClose() {
+    _isDisposed = true;
     _analyticsSubscription?.cancel();
     super.onClose();
   }
@@ -46,7 +61,14 @@ class StatsController extends GetxController {
       fetchCloudAnalytics(),
       fetchLeaderboard(),
     ]);
-    isLoading.value = false;
+    if (!_isDisposed) isLoading.value = false;
+  }
+
+  void startNudgeCooldown() {
+    isNudgeCooldown.value = true;
+    Timer(const Duration(seconds: 60), () {
+      isNudgeCooldown.value = false;
+    });
   }
 
   Future<void> fetchLeaderboard() async {
@@ -66,21 +88,21 @@ class StatsController extends GetxController {
     try {
       // Dengarkan perubahan secara real-time dari Supabase (WebSockets)
       _analyticsSubscription?.cancel();
-      _analyticsSubscription = _supabaseService.watchAnalyticsData(limit: 1000).listen(
+      _analyticsSubscription = _supabaseService.watchAnalyticsData(limit: 1000, targetUserId: targetUserId).listen(
         (cloudData) {
-          // Setiap kali ada data baru dari database (anak terdeteksi), 
-          // Stream ini akan otomatis terpanggil.
+          isLiveSyncActive.value = true;
           
-          // MENGGABUNGKAN DATA: Cloud + Local Hive
-          final localLogs = telemetryService.getAllLocalLogs();
+          // MENGGABUNGKAN DATA: Cloud + Local Hive (Hanya jika bukan melihat orang lain)
           final List<Map<String, dynamic>> combinedLogs = List.from(cloudData);
-          
-          for (var log in localLogs) {
-            combinedLogs.add({
-              'created_at': log.timestamp.toIso8601String(),
-              'is_violation': log.isViolation,
-              'distance': log.distance,
-            });
+          if (targetUserId == null) {
+            final localLogs = telemetryService.getAllLocalLogs();
+            for (var log in localLogs) {
+              combinedLogs.add({
+                'created_at': log.timestamp.toIso8601String(),
+                'is_violation': log.isViolation,
+                'distance': log.distance,
+              });
+            }
           }
 
           if (combinedLogs.isNotEmpty) {
@@ -90,11 +112,13 @@ class StatsController extends GetxController {
           }
         },
         onError: (error) {
+          isLiveSyncActive.value = false;
           Get.log('Error Stream Analytics: $error');
           _resetToEmptyState();
         },
       );
     } catch (e) {
+      isLiveSyncActive.value = false;
       _resetToEmptyState();
     }
   }
@@ -105,6 +129,7 @@ class StatsController extends GetxController {
     totalViolationsCount.value = 0;
     averageDistance.value = 38.0;
     hourlyViolations.value = List.filled(24, 0.0);
+    detailedLogs.clear();
   }
 
   void _processHeatmapData(List<Map<String, dynamic>> logs) {
@@ -123,6 +148,8 @@ class StatsController extends GetxController {
     final now = DateTime.now();
     final Map<int, List<bool>> weeklyMap = {for (var i = 0; i < 7; i++) i: []};
     
+    final List<Map<String, dynamic>> tempLogs = [];
+    
     for (var log in logs) {
       try {
         final createdAtStr = log['created_at']?.toString();
@@ -130,6 +157,13 @@ class StatsController extends GetxController {
         
         final createdAt = DateTime.parse(createdAtStr).toLocal();
         final isViolation = log['is_violation'] as bool? ?? false;
+        
+        if (isViolation) {
+          tempLogs.add({
+            'time': createdAt,
+            'distance': log['distance'],
+          });
+        }
         
         // --- WEEKLY CHART LOGIC (7 Hari Terakhir) ---
         final differenceInDays = now.difference(createdAt).inDays;
@@ -171,15 +205,12 @@ class StatsController extends GetxController {
 
     final int logCount = logs.length;
     if (logCount > 0) {
-      // RUMUS BARU (Smart Event-Driven Architecture):
-      // Heartbeat mewakili 60 detik aktivitas aman.
-      // Violation mewakili 15 detik aktivitas bahaya.
-      final int totalScreenTimeSeconds = (totalHeartbeats * 60) + (totalViolations * 15);
-      
       // Menghitung persentase waktu bahaya dari total waktu
       final int totalViolationSeconds = totalViolations * 15;
-      final double timeBasedViolationRate = totalScreenTimeSeconds > 0 
-          ? (totalViolationSeconds / totalScreenTimeSeconds) 
+      final int estimatedScreenSeconds = (totalHeartbeats * 60) + (totalViolations * 15);
+      
+      final double timeBasedViolationRate = estimatedScreenSeconds > 0 
+          ? (totalViolationSeconds / estimatedScreenSeconds) 
           : 0.0;
           
       final double rawScore = 100 - (timeBasedViolationRate * 100);
@@ -187,10 +218,51 @@ class StatsController extends GetxController {
           ? 100 
           : rawScore.clamp(0, 100).toInt();
       
-      final double rawScreenTime = totalScreenTimeSeconds / 3600;
+      // RUMUS BARU (Data Lokal Aktual - Fitur Layar vs Istirahat):
+      // Menyaring log khusus hari ini dan mengurutkannya secara kronologis
+      final todayLogs = logs.where((log) {
+        final createdAtStr = log['created_at']?.toString();
+        if (createdAtStr == null) return false;
+        final createdAt = DateTime.parse(createdAtStr).toLocal();
+        return createdAt.year == now.year && createdAt.month == now.month && createdAt.day == now.day;
+      }).map((log) => DateTime.parse(log['created_at'].toString()).toLocal()).toList();
+      
+      todayLogs.sort();
+
+      int actualScreenTimeSeconds = 0;
+
+      if (todayLogs.length > 1) {
+        for (int i = 1; i < todayLogs.length; i++) {
+          final diff = todayLogs[i].difference(todayLogs[i - 1]).inSeconds;
+          // Jika jarak antar log kurang dari 5 menit (300 detik), dihitung sebagai kelanjutan Waktu Layar (Sesi Aktif)
+          if (diff <= 300) {
+            actualScreenTimeSeconds += diff;
+          } else {
+            // Jika lebih dari 5 menit, dianggap sesi baru. Beri baseline tambahan 60s untuk log sebelumnya.
+            actualScreenTimeSeconds += 60;
+          }
+        }
+        // Tambahan 60s untuk log terakhir sebagai baseline
+        actualScreenTimeSeconds += 60;
+      } else if (todayLogs.length == 1) {
+        // Jika baru 1 log, beri baseline 60 detik layar
+        actualScreenTimeSeconds = 60;
+      }
+      
+      // Total detik yang telah berlalu sejak pukul 00:00 hari ini
+      final nowTime = DateTime.now();
+      final midnight = DateTime(nowTime.year, nowTime.month, nowTime.day);
+      final totalSecondsPassedToday = nowTime.difference(midnight).inSeconds;
+      
+      // Waktu istirahat absolut (Big Data Aggregation)
+      int actualRestTimeSeconds = totalSecondsPassedToday - actualScreenTimeSeconds;
+      if (actualRestTimeSeconds < 0) actualRestTimeSeconds = 0;
+
+      final double rawScreenTime = actualScreenTimeSeconds / 3600;
       screenTimeHours.value = rawScreenTime.isNaN || rawScreenTime.isInfinite ? 0.0 : rawScreenTime;
       
-      restTimeHours.value = screenTimeHours.value * 0.2;
+      final double rawRestTime = actualRestTimeSeconds / 3600;
+      restTimeHours.value = rawRestTime.isNaN || rawRestTime.isInfinite ? 0.0 : rawRestTime;
     }
 
     final List<double> newIntensity = List.filled(24, 0.0);
@@ -213,5 +285,9 @@ class StatsController extends GetxController {
       }
     }
     weeklyData.value = newWeekly;
+
+    // --- SORT DETAILED LOGS DESCENDING ---
+    tempLogs.sort((a, b) => b['time'].compareTo(a['time']));
+    detailedLogs.value = tempLogs;
   }
 }

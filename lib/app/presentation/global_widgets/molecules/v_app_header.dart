@@ -7,12 +7,14 @@ import 'package:visionsafe/app/core/values/app_text_styles.dart';
 class VAppHeader extends StatelessWidget implements PreferredSizeWidget {
   final String title;
   final bool showStatus;
+  final bool? showBackButton;
   final List<Widget>? actions;
 
   const VAppHeader({
     super.key, 
     required this.title,
     this.showStatus = true,
+    this.showBackButton,
     this.actions,
   });
 
@@ -35,7 +37,7 @@ class VAppHeader extends StatelessWidget implements PreferredSizeWidget {
       backgroundColor: Colors.transparent, 
       elevation: 0,
       actions: actions,
-      automaticallyImplyLeading: true, // Allow default back buttons on sub-pages
+      automaticallyImplyLeading: showBackButton ?? true, // Allow default back buttons on sub-pages
     );
   }
 

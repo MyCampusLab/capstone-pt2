@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:visionsafe/app/core/values/app_colors.dart';
 import 'package:visionsafe/app/core/values/app_text_styles.dart';
+import '../../controllers/quests_controller.dart';
 
 class QuestsHeader extends StatelessWidget {
   const QuestsHeader({super.key});
@@ -38,6 +40,38 @@ class QuestsHeader extends StatelessWidget {
               ],
             ),
           ),
+          Obx(() {
+            final controller = Get.find<QuestsController>();
+            final streak = controller.streakCount.value;
+            String multiplier = "1x XP";
+            if (streak >= 7) {
+              multiplier = "2x XP";
+            } else if (streak >= 3) {
+              multiplier = "1.5x XP";
+            }
+            
+            return Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: AppColors.warning,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.white, width: 2),
+                boxShadow: [BoxShadow(color: Colors.black.withAlpha(50), blurRadius: 4, offset: const Offset(0, 2))],
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.local_fire_department_rounded, color: Colors.white, size: 16),
+                      const SizedBox(width: 4),
+                      Text("$streak HARI", style: AppTextStyles.caption.copyWith(color: Colors.white, fontWeight: FontWeight.w900)),
+                    ],
+                  ),
+                  Text("Buff: $multiplier", style: AppTextStyles.caption.copyWith(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold)),
+                ],
+              ),
+            );
+          }),
         ],
       ),
     );

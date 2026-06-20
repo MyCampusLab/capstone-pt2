@@ -7,8 +7,9 @@ import '../../controllers/stats_controller.dart';
 
 /// Card untuk membandingkan waktu penggunaan layar dan waktu istirahat mata.
 /// Proteksi: Anti-NaN & Anti-Infinity untuk stabilitas progres bar.
-class ScreenTimeVsRestCard extends GetView<StatsController> {
-  const ScreenTimeVsRestCard({super.key});
+class ScreenTimeVsRestCard extends StatelessWidget {
+  final StatsController controller;
+  const ScreenTimeVsRestCard({super.key, required this.controller});
 
   @override
   Widget build(BuildContext context) {

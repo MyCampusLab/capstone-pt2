@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:visionsafe/app/core/values/app_colors.dart';
 import 'package:visionsafe/app/core/values/app_text_styles.dart';
 import '../atoms/v_card.dart';
 import '../atoms/v_button.dart';
+import 'package:confetti/confetti.dart';
 
 /// Utilitas Dialog bergaya VCard untuk konsistensi UI/UX Elite.
 class VDialog {
@@ -17,11 +19,18 @@ class VDialog {
     Color iconColor = AppColors.primary,
     VoidCallback? onConfirm,
     VoidCallback? onCancel,
+    bool hideButtons = false,
+    bool showConfetti = false,
+    bool barrierDismissible = true,
   }) {
+    HapticFeedback.mediumImpact();
+    
     Get.dialog(
-      Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 32),
+      _ConfettiDialogWrapper(
+        showConfetti: showConfetti,
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32),
           child: Material(
             color: Colors.transparent,
             child: VCard(
@@ -60,48 +69,107 @@ class VDialog {
                   const SizedBox(height: 16),
                   content,
                 ],
-                const SizedBox(height: 24),
-                Row(
-                  children: [
-                    if (cancelLabel != null) ...[
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () {
-                            Get.back();
-                            onCancel?.call();
-                          },
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            side: const BorderSide(color: AppColors.primaryDark, width: 2),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                          ),
-                          child: Text(
-                            cancelLabel.toUpperCase(),
-                            style: AppTextStyles.bodyBold.copyWith(fontSize: 14, color: AppColors.primaryDark),
+                if (!hideButtons) ...[
+                  const SizedBox(height: 24),
+                  Row(
+                    children: [
+                      if (cancelLabel != null) ...[
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () {
+                              HapticFeedback.lightImpact();
+                              Get.back();
+                              onCancel?.call();
+                            },
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              side: const BorderSide(color: AppColors.primaryDark, width: 2),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            ),
+                            child: Text(
+                              cancelLabel.toUpperCase(),
+                              style: AppTextStyles.bodyBold.copyWith(fontSize: 14, color: AppColors.primaryDark),
+                            ),
                           ),
                         ),
+                        const SizedBox(width: 12),
+                      ],
+                      Expanded(
+                        child: VButton(
+                          label: confirmLabel,
+                          onPressed: () {
+                            Get.back();
+                            onConfirm?.call();
+                          },
+                        ),
                       ),
-                      const SizedBox(width: 12),
                     ],
-                    Expanded(
-                      child: VButton(
-                        label: confirmLabel,
-                        onPressed: () {
-                          Get.back();
-                          onConfirm?.call();
-                        },
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ],
+            ),
             ),
           ),
           ),
         ),
       ),
       barrierColor: Colors.black.withAlpha(100),
+      barrierDismissible: barrierDismissible,
       transitionCurve: Curves.elasticOut,
+    );
+  }
+}
+
+class _ConfettiDialogWrapper extends StatefulWidget {
+  final Widget child;
+  final bool showConfetti;
+
+  const _ConfettiDialogWrapper({required this.child, this.showConfetti = false});
+
+  @override
+  State<_ConfettiDialogWrapper> createState() => _ConfettiDialogWrapperState();
+}
+
+class _ConfettiDialogWrapperState extends State<_ConfettiDialogWrapper> {
+  late ConfettiController _confettiController;
+
+  @override
+  void initState() {
+    super.initState();
+    _confettiController = ConfettiController(duration: const Duration(seconds: 2));
+    if (widget.showConfetti) {
+      _confettiController.play();
+    }
+  }
+
+  @override
+  void dispose() {
+    _confettiController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        widget.child,
+        if (widget.showConfetti)
+          Align(
+            alignment: Alignment.topCenter,
+            child: ConfettiWidget(
+              confettiController: _confettiController,
+              blastDirectionality: BlastDirectionality.explosive,
+              shouldLoop: false,
+              emissionFrequency: 0.05,
+              numberOfParticles: 20,
+              maxBlastForce: 100,
+              minBlastForce: 80,
+              gravity: 0.2,
+              colors: const [Colors.green, Colors.blue, Colors.pink, Colors.orange, Colors.purple],
+            ),
+          ),
+      ],
     );
   }
 }

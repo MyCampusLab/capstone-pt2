@@ -116,40 +116,44 @@ class VBottomNav extends GetView<MainWrapperController> {
       child: Obx(() {
         final bool isSelected = controller.currentIndex.value == index;
         
-        return GestureDetector(
-          onTap: () {
-            if (!isSelected) {
-              HapticFeedback.mediumImpact();
-              controller.changePage(index);
-            }
-          },
-          behavior: HitTestBehavior.opaque,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              AnimatedScale(
-                scale: isSelected ? 1.0 : 0.9,
-                duration: AppDesign.medium,
-                curve: AppDesign.springCurve,
-                child: Icon(
-                  icon,
-                  color: isSelected ? Colors.white : AppColors.primaryDark.withValues(alpha: 0.45),
-                  size: 26,
-                ),
-              ),
-              if (!isSelected)
-                const SizedBox(height: 4),
-              if (!isSelected)
-                Text(
-                  label,
-                  style: AppTextStyles.caption.copyWith(
-                    fontSize: 8,
-                    fontWeight: FontWeight.w900,
-                    color: AppColors.primaryDark.withValues(alpha: 0.45),
-                    letterSpacing: 0.5,
+        return Semantics(
+          label: 'katalon_nav_${label.toLowerCase()}',
+          button: true,
+          child: GestureDetector(
+            onTap: () {
+              if (!isSelected) {
+                HapticFeedback.mediumImpact();
+                controller.changePage(index);
+              }
+            },
+            behavior: HitTestBehavior.opaque,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                AnimatedScale(
+                  scale: isSelected ? 1.0 : 0.9,
+                  duration: AppDesign.medium,
+                  curve: AppDesign.springCurve,
+                  child: Icon(
+                    icon,
+                    color: isSelected ? Colors.white : AppColors.primaryDark.withValues(alpha: 0.45),
+                    size: 26,
                   ),
                 ),
-            ],
+                if (!isSelected)
+                  const SizedBox(height: 4),
+                if (!isSelected)
+                  Text(
+                    label,
+                    style: AppTextStyles.caption.copyWith(
+                      fontSize: 8,
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.primaryDark.withValues(alpha: 0.45),
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+              ],
+            ),
           ),
         );
       }),

@@ -25,8 +25,11 @@ class CompactActionButton extends StatelessWidget {
           HapticFeedback.heavyImpact();
           controller.toggleService();
         },
-        child: AnimatedContainer(
+        child: AnimatedOpacity(
           duration: AppDesign.medium,
+          opacity: isRunning ? 0.75 : 1.0,
+          child: AnimatedContainer(
+            duration: AppDesign.medium,
           curve: AppDesign.springCurve,
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           decoration: BoxDecoration(
@@ -96,6 +99,7 @@ class CompactActionButton extends StatelessWidget {
               ),
             ],
           ),
+        ),
         ),
       );
     });

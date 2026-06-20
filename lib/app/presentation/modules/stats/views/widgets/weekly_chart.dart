@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:get/get.dart';
 import 'package:visionsafe/app/presentation/modules/stats/controllers/stats_controller.dart';
 import 'package:visionsafe/app/presentation/global_widgets/atoms/v_card.dart';
 import 'package:visionsafe/app/core/values/app_colors.dart';
@@ -9,14 +8,14 @@ import 'package:visionsafe/app/core/values/app_text_styles.dart';
 /// WeeklyChart: Grafik Mingguan Interaktif bertema Neobrutalisme Komik Retro.
 /// Fitur: Tap-to-Bounce Bars, Detail Pop-Up Bubble, dan Optometry Health Advice Card.
 class WeeklyChart extends StatefulWidget {
-  const WeeklyChart({super.key});
+  final StatsController controller;
+  const WeeklyChart({super.key, required this.controller});
 
   @override
   State<WeeklyChart> createState() => _WeeklyChartState();
 }
 
 class _WeeklyChartState extends State<WeeklyChart> {
-  final StatsController controller = Get.find<StatsController>();
   int _selectedBarIndex = -1;
 
   // Data detail hari-hari
@@ -32,7 +31,7 @@ class _WeeklyChartState extends State<WeeklyChart> {
 
   @override
   Widget build(BuildContext context) {
-    final health = controller.healthScore.value;
+    final health = widget.controller.healthScore.value;
     String adviceText = "Luar biasa! Matamu dalam kondisi prima minggu ini. Pertahankan kebiasaan lirik kiri-kanan ya!";
     IconData adviceIcon = Icons.stars_rounded;
     Color adviceColor = Colors.green.shade600;
@@ -108,21 +107,29 @@ class _WeeklyChartState extends State<WeeklyChart> {
                         margin: const EdgeInsets.only(top: 20),
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: _daysDetail[_selectedBarIndex]["color"].withAlpha(35),
+                          color: AppColors.primaryDark, // Solid dark background for contrast
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: AppColors.primaryDark, width: 2),
-                          boxShadow: const [
+                          border: Border.all(color: _daysDetail[_selectedBarIndex]["color"], width: 2), // Colorful border
+                          boxShadow: [
                             BoxShadow(
-                              color: AppColors.primaryDark,
-                              offset: Offset(3, 3),
+                              color: _daysDetail[_selectedBarIndex]["color"].withAlpha(100),
+                              offset: const Offset(3, 3),
+                              blurRadius: 4,
                             ),
                           ],
                         ),
                         child: Row(
                           children: [
-                            Icon(
-                              Icons.insights_rounded,
-                              color: _daysDetail[_selectedBarIndex]["color"],
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: _daysDetail[_selectedBarIndex]["color"].withAlpha(50),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.insights_rounded,
+                                color: _daysDetail[_selectedBarIndex]["color"], // Colorful icon
+                              ),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
@@ -133,16 +140,19 @@ class _WeeklyChartState extends State<WeeklyChart> {
                                     "DETAIL HARI ${_daysDetail[_selectedBarIndex]["name"].toUpperCase()}",
                                     style: AppTextStyles.caption.copyWith(
                                       fontWeight: FontWeight.w900,
-                                      color: AppColors.primaryDark,
+                                      color: Colors.white70, // Visible text
                                     ),
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
-                                    "${_daysDetail[_selectedBarIndex]["violations"]} Pelanggaran Jarak • Status ${_daysDetail[_selectedBarIndex]["status"]}",
+                                    "${_daysDetail[_selectedBarIndex]["violations"]} Pelanggaran • ${_daysDetail[_selectedBarIndex]["status"]}",
                                     style: AppTextStyles.bodyBold.copyWith(
-                                      fontSize: 12,
-                                      color: AppColors.primaryDark,
+                                      fontSize: 13,
+                                      color: Colors.white, // Highly visible text
                                     ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    softWrap: true,
                                   ),
                                 ],
                               ),
@@ -259,15 +269,7 @@ class _WeeklyChartState extends State<WeeklyChart> {
                         color: AppColors.primaryDark,
                         width: isSelected ? 2.5 : 1.8,
                       ),
-                      boxShadow: isSelected
-                          ? [
-                              BoxShadow(
-                                color: color.withAlpha(120),
-                                blurRadius: 6,
-                                spreadRadius: 1,
-                              )
-                            ]
-                          : null,
+                      boxShadow: null,
                     ),
                   ),
                 ),

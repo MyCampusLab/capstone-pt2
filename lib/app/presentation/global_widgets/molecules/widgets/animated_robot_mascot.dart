@@ -77,13 +77,16 @@ class _AnimatedRobotMascotState extends State<AnimatedRobotMascot> with TickerPr
   }
 
   Widget _buildRobotFace(Color color) {
-    return Stack(
-      alignment: Alignment.center,
-      clipBehavior: Clip.none,
-      children: [
-        // Robotic Cat Ears
-        Positioned(top: -widget.size * 0.18, left: widget.size * 0.08, child: _buildRoboticCatEar(color, isLeft: true)),
-        Positioned(top: -widget.size * 0.18, right: widget.size * 0.08, child: _buildRoboticCatEar(color, isLeft: false)),
+    return SizedBox(
+      width: widget.size,
+      height: widget.size * 0.85,
+      child: Stack(
+        alignment: Alignment.center,
+        clipBehavior: Clip.none,
+        children: [
+          // Robotic Cat Ears
+          Positioned(top: -widget.size * 0.18, left: widget.size * 0.08, child: _buildRoboticCatEar(color, isLeft: true)),
+          Positioned(top: -widget.size * 0.18, right: widget.size * 0.08, child: _buildRoboticCatEar(color, isLeft: false)),
         
         // Main Head
         Container(
@@ -164,8 +167,9 @@ class _AnimatedRobotMascotState extends State<AnimatedRobotMascot> with TickerPr
           ),
         ),
       ],
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildRoboticCatEar(Color color, {required bool isLeft}) {
     return Transform.rotate(

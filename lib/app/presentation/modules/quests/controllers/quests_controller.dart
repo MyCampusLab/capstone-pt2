@@ -1,99 +1,203 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'dart:async';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:visionsafe/app/data/services/reward_service.dart';
 import 'package:visionsafe/app/data/services/telemetry_service.dart';
 import 'package:visionsafe/app/data/models/sticker_model.dart';
 import 'package:visionsafe/app/presentation/global_widgets/molecules/v_toast.dart';
 import 'package:visionsafe/app/presentation/global_widgets/molecules/vizo_mascot.dart';
 
+import 'package:visionsafe/app/data/services/config_service.dart';
+
 class QuestsController extends GetxController {
   final _rewardService = Get.find<RewardService>();
   final _telemetryService = Get.find<TelemetryService>();
+  final _configService = Get.find<ConfigService>();
 
   final specialQuest = {
     'id': 'sq1',
-    'title': 'Senam Mata Hero',
-    'subtitle': 'Lakukan relaksasi mata sekarang',
+    'title': 'Relaksasi Total',
+    'subtitle': 'Selesaikan Senam Mata 3D Vizo',
     'status': 'active',
-    'icon': Icons.visibility_rounded,
+    'type': 'action',
+    'icon': Icons.self_improvement_rounded,
   }.obs;
 
   // Real-time metrics untuk tracking quest
-  final sessionBlinks = 0.obs;
-  final sessionFocusMinutes = 0.0.obs;
+  final eyeExerciseCompleted = 0.obs;
   
-  bool _blinkQuestCompleted = false;
-  bool _focusQuestCompleted = false;
+  Timer? _questTimer;
 
   // Quest dinamis yang terhitung otomatis
   final quests = <Map<String, dynamic>>[].obs;
   final heroes = <StickerModel>[].obs;
   final isLoading = false.obs;
+  
+  Box? _questBox;
+  final streakCount = 0.obs;
 
   @override
   void onInit() {
     super.onInit();
+    _initQuestsStorage();
+  }
+  
+  Future<void> _initQuestsStorage() async {
+    _questBox = await Hive.openBox('vizo_quests');
+    _calculateStreak();
     _initQuests();
     _loadHeroes();
     _listenToLiveTelemetry();
+  }
+  
+  void _calculateStreak() {
+    final lastLogin = _questBox?.get('last_login_date');
+    final currentStreak = _questBox?.get('streak_count', defaultValue: 1) as int;
+    final today = DateTime.now().toIso8601String().substring(0, 10);
+    
+    if (lastLogin != today) {
+      if (lastLogin != null) {
+        final lastDate = DateTime.parse(lastLogin);
+        final difference = DateTime.now().difference(lastDate).inDays;
+        if (difference == 1) {
+          _questBox?.put('streak_count', currentStreak + 1);
+        } else {
+          _questBox?.put('streak_count', 1);
+        }
+      } else {
+        _questBox?.put('streak_count', 1);
+      }
+      _questBox?.put('last_login_date', today);
+    }
+    streakCount.value = _questBox?.get('streak_count', defaultValue: 1) as int;
+  }
+
+  @override
+  void onClose() {
+    _questTimer?.cancel();
+    super.onClose();
   }
 
   void _initQuests() {
     quests.assignAll([
       {
         'id': 'q1',
-        'title': 'Blink Marathon',
-        'subtitle': 'Blink 50 times in this session',
-        'target': 50,
-        'icon': Icons.remove_red_eye_rounded,
+        'title': 'Mata Baja',
+        'subtitle': 'Jaga jarak aman 30 Menit sesi ini',
+        'target': 30,
+        'icon': Icons.shield_rounded,
       },
       {
         'id': 'q2',
-        'title': 'Focus Legend',
-        'subtitle': '10 Minutes of safe distance',
+        'title': 'Detoks Mini',
+        'subtitle': 'Istirahat layar 15 Menit',
+        'target': 15,
+        'icon': Icons.battery_charging_full_rounded,
+      },
+      {
+        'id': 'q3',
+        'title': 'Fokus Jangka Panjang',
+        'subtitle': 'Jaga jarak aman akumulasi 1 Jam',
+        'target': 60,
+        'icon': Icons.star_rounded,
+      },
+      {
+        'id': 'q4',
+        'title': 'Kedipan Sempurna',
+        'subtitle': 'Cegah Mata Kering (Blink 10x)',
         'target': 10,
-        'icon': Icons.bolt_rounded,
+        'icon': Icons.remove_red_eye_rounded,
       },
     ]);
   }
 
   void _listenToLiveTelemetry() {
-    // Monitor kedipan mata untuk quest Blink Marathon
-    ever(_telemetryService.blinkCount, (_) {
-      sessionBlinks.value++;
+    // Monitor durasi harian yang nyata melalui sinkronisasi ConfigService
+    _questTimer = Timer.periodic(const Duration(seconds: 3), (_) {
       _checkQuestProgress();
     });
-
-    // Monitor durasi fokus harian
-    interval(_telemetryService.currentDistance, (_) {
-      if (!_telemetryService.isViolation.value && _telemetryService.currentDistance.value > 0) {
-        sessionFocusMinutes.value += (1 / 60); // 1 detik = 1/60 menit
-        _checkQuestProgress();
-      }
-    }, time: const Duration(seconds: 1));
   }
 
   double getQuestProgress(String id) {
-    // Touch reactive variables to register dependency for Obx stability
-    sessionBlinks.value;
-    sessionFocusMinutes.value;
+    // Reactive touch
+    eyeExerciseCompleted.value;
 
-    if (id == 'q1') return (sessionBlinks.value / 50).clamp(0.0, 1.0);
-    if (id == 'q2') return (sessionFocusMinutes.value / 10).clamp(0.0, 1.0);
+    final safeMinutes = _configService.monitoringSecondsToday / 60.0;
+    final blinks = _telemetryService.blinkCount.value;
+
+    if (id == 'sq1') return eyeExerciseCompleted.value > 0 ? 1.0 : 0.0;
+    if (id == 'q1') return (safeMinutes / 30.0).clamp(0.0, 1.0);
+    if (id == 'q2') return (safeMinutes / 15.0).clamp(0.0, 1.0); 
+    if (id == 'q3') return (safeMinutes / 60.0).clamp(0.0, 1.0);
+    if (id == 'q4') return (blinks / 50.0).clamp(0.0, 1.0);
     return 0.0;
+  }
+  
+  bool isQuestClaimedToday(String id) {
+    final today = DateTime.now().toIso8601String().substring(0, 10);
+    final lastClaim = _questBox?.get('claim_date_$id');
+    return lastClaim == today;
+  }
+
+  void markExerciseCompleted() {
+    eyeExerciseCompleted.value++;
+    _checkQuestProgress();
   }
 
   void _checkQuestProgress() {
-    if (!_blinkQuestCompleted && sessionBlinks.value >= 50) {
-      _blinkQuestCompleted = true;
-      _rewardService.addXp(50);
-      VToast.show("Quest Complete!", "You've finished Blink Marathon! +50 XP", state: VizoState.happy);
+    bool hasUpdates = false;
+    for (var i = 0; i < quests.length; i++) {
+      final q = quests[i];
+      final prog = getQuestProgress(q['id']);
+      final isCompleted = prog >= 1.0;
+      final isClaimed = isQuestClaimedToday(q['id']);
+      
+      // Update UI state
+      if (q['isReadyToClaim'] != (isCompleted && !isClaimed)) {
+        q['isReadyToClaim'] = (isCompleted && !isClaimed);
+        q['isClaimed'] = isClaimed;
+        hasUpdates = true;
+      }
     }
-    if (!_focusQuestCompleted && sessionFocusMinutes.value >= 10.0) {
-      _focusQuestCompleted = true;
-      _rewardService.addXp(100);
-      VToast.show("Master of Focus!", "10 minutes safely guarded. +100 XP", state: VizoState.focused);
+    
+    // Check Special Quest
+    final sqProg = getQuestProgress(specialQuest['id'] as String);
+    final sqClaimed = isQuestClaimedToday(specialQuest['id'] as String);
+    if (specialQuest['isReadyToClaim'] != (sqProg >= 1.0 && !sqClaimed)) {
+      specialQuest['isReadyToClaim'] = (sqProg >= 1.0 && !sqClaimed);
+      specialQuest['isClaimed'] = sqClaimed;
+      specialQuest.refresh();
     }
+
+    if (hasUpdates) quests.refresh();
+  }
+  
+  void claimQuestReward(String id, int baseReward) {
+    if (isQuestClaimedToday(id)) {
+      return;
+    }
+    
+    // 1. Calculate XP with Streak Multiplier
+    double multiplier = 1.0;
+    if (streakCount.value >= 7) {
+      multiplier = 2.0;
+    } else if (streakCount.value >= 3) {
+      multiplier = 1.5;
+    }
+    
+    final finalXp = (baseReward * multiplier).toInt();
+    
+    // 2. Persist Claim
+    final today = DateTime.now().toIso8601String().substring(0, 10);
+    _questBox?.put('claim_date_$id', today);
+    
+    // 3. Grant Reward
+    _rewardService.addXp(finalXp, isQuest: true);
+    VToast.show("Reward Claimed!", "Kamu mendapatkan +$finalXp XP! (Streak x$multiplier)", state: VizoState.happy);
+    
+    // 4. Update UI
+    _checkQuestProgress();
   }
 
   Future<void> refreshQuestData() async {
@@ -121,10 +225,16 @@ class QuestsController extends GetxController {
       return;
     }
     
+    String instructions = "Jaga jarak mata lebih dari 30cm dari layar sekarang. Vizo sedang mengawasi!";
+    if (id == 'q2') {
+      instructions = "Kunci layar HP kamu dan istirahatlah selama 15 menit.";
+    }
+
     VToast.show(
-      "Quest Tracking", 
-      "Vizo is now monitoring your progress!",
-      state: VizoState.happy,
+      "Quest Aktif!", 
+      instructions,
+      state: VizoState.focused,
+      duration: const Duration(seconds: 4),
     );
   }
 }

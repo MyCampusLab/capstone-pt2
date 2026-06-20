@@ -5,8 +5,9 @@ import 'package:visionsafe/app/core/values/app_colors.dart';
 import 'package:visionsafe/app/core/values/app_text_styles.dart';
 import 'package:visionsafe/app/presentation/global_widgets/atoms/v_card.dart';
 
-class StickerCollection extends GetView<StatsController> {
-  const StickerCollection({super.key});
+class StickerCollection extends StatelessWidget {
+  final StatsController controller;
+  const StickerCollection({super.key, required this.controller});
 
   @override
   Widget build(BuildContext context) {

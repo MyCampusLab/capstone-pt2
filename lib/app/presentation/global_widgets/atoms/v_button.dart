@@ -14,6 +14,7 @@ class VButton extends StatefulWidget {
   final IconData? icon;
   final double? width;
   final bool enabled;
+  final bool isOutline;
 
   const VButton({
     super.key,
@@ -24,6 +25,7 @@ class VButton extends StatefulWidget {
     this.icon,
     this.width,
     this.enabled = true,
+    this.isOutline = false,
   });
 
   @override
@@ -82,16 +84,19 @@ class _VButtonState extends State<VButton> with SingleTickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    final Color buttonColor = _isActive ? widget.color : AppColors.grey.withAlpha(50);
+    final Color baseColor = widget.isOutline ? Colors.white : widget.color;
+    final Color buttonColor = _isActive ? baseColor : AppColors.grey.withAlpha(50);
     
     final Color contentColor = !_isActive
         ? AppColors.grey
-        : (buttonColor == AppColors.primary || 
-           buttonColor == AppColors.success || 
-           buttonColor == AppColors.warning || 
-           buttonColor == Colors.white)
-            ? AppColors.primaryDark
-            : Colors.white;
+        : widget.isOutline 
+            ? (widget.color == Colors.white ? AppColors.primaryDark : widget.color)
+            : (buttonColor == AppColors.primary || 
+               buttonColor == AppColors.success || 
+               buttonColor == AppColors.warning || 
+               buttonColor == Colors.white)
+                ? AppColors.primaryDark
+                : Colors.white;
 
     return Semantics(
       button: true,
