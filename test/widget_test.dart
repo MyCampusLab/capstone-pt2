@@ -29,6 +29,16 @@ class MockVisionServiceProvider extends GetxService implements VisionServiceProv
   Future<void> requestIgnoreBatteryOptimization() async {}
   @override
   Future<void> requestOverlayPermission() async {}
+  @override
+  Future<bool> checkAccessibilityPermission() async => true;
+  @override
+  Future<void> requestAccessibilityPermission() async {}
+  @override
+  Future<void> requestAutoStartPermission() async {}
+  @override
+  Future<void> setCalibrationMultiplier(double multiplier) async {}
+  @override
+  Future<void> updateGpuDelegation(bool isEnabled) async {}
 }
 
 class MockSupabaseService extends GetxService implements SupabaseService {
@@ -51,7 +61,9 @@ class MockSupabaseService extends GetxService implements SupabaseService {
   @override
   Future<List<Map<String, dynamic>>> getLeaderboard() async => [];
   @override
-  Stream<List<Map<String, dynamic>>> watchAnalyticsData({int limit = 1000}) => const Stream.empty();
+  Stream<List<Map<String, dynamic>>> watchAnalyticsData({int limit = 1000, String? targetUserId}) => const Stream.empty();
+  @override
+  Future<void> updateUserHeartbeat() async {}
 }
 
 class MockRewardService extends GetxService implements RewardService {
@@ -72,7 +84,11 @@ class MockRewardService extends GetxService implements RewardService {
   @override
   Future<bool> buySticker(String id) async => true;
   @override
-  Future<void> addXp(int amount) async {}
+  Future<void> addXp(int amount, {bool isQuest = false}) async {}
+  @override
+  StickerModel? getEquippedSticker() => null;
+  @override
+  Future<void> equipSticker(String id) async {}
 }
 
 class MockNewsService extends GetxService implements NewsService {

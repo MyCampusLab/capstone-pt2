@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:visionsafe/app/presentation/modules/splash/views/splash_view.dart';
 import 'package:visionsafe/app/data/services/auth_service.dart';
 import 'package:visionsafe/app/data/services/config_service.dart';
+import 'package:visionsafe/app/presentation/global_widgets/molecules/vizo_mascot.dart';
 
 // Mock AuthService using Dart's implicit interface and noSuchMethod
 class MockAuthService extends GetxService implements AuthService {
@@ -51,7 +52,7 @@ void main() {
     ));
 
     // Check Mascot
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    expect(find.byType(VizoMascot), findsOneWidget);
     expect(find.text('VISIONSAFE'), findsOneWidget);
     
     // Check Subtitle

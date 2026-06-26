@@ -109,6 +109,7 @@ void main() {
     await tester.enterText(find.byKey(const Key('reg_password_input')), 'password123');
     await tester.enterText(find.byKey(const Key('reg_confirm_password_input')), 'password123');
     
+    await tester.tap(find.byType(Checkbox));
     await tester.ensureVisible(find.widgetWithText(VButton, "CREATE ACCOUNT"));
 
     final mockResponse = AuthResponse(user: User(
@@ -143,6 +144,7 @@ void main() {
     await tester.enterText(find.byKey(const Key('reg_password_input')), 'password123');
     await tester.enterText(find.byKey(const Key('reg_confirm_password_input')), 'different123');
 
+    await tester.tap(find.byType(Checkbox));
     await tester.ensureVisible(find.widgetWithText(VButton, "CREATE ACCOUNT"));
     await tester.tap(find.widgetWithText(VButton, "CREATE ACCOUNT"));
     await tester.pump();
@@ -175,6 +177,7 @@ void main() {
     when(mockAuthRepository.register(any, any, name: anyNamed('name')))
         .thenThrow(AuthException('User already registered'));
 
+    await tester.tap(find.byType(Checkbox));
     await tester.ensureVisible(find.widgetWithText(VButton, "CREATE ACCOUNT"));
     await tester.tap(find.widgetWithText(VButton, "CREATE ACCOUNT"));
     await tester.pump();

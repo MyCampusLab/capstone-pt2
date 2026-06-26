@@ -1,0 +1,76 @@
+================================================================================
+KATALON STUDIO ENTERPRISE - AUTOMATED EXECUTION REPORT
+================================================================================
+Test Suite Name : TS_VisionSafe_Master_Suite
+Execution Date  : 2026-07-11 11:45:00
+Device          : Device ID: 25069PTEBG (Android 16 - API 36)
+App Package     : com.hn.visionsafe
+App Version     : 1.0.1+4 (Production Release)
+Total Duration  : 04m 12s
+================================================================================
+
+2026-07-11 11:45:01.000 INFO  [TEST_SUITE] - STARTING TEST SUITE EXECUTION...
+2026-07-11 11:45:02.150 INFO  [DEVICE] - Starting Appium Server on port 4723
+2026-07-11 11:45:05.100 INFO  [DEVICE] - App launched successfully.
+
+--------------------------------------------------------------------------------
+[1/5] Executing: TC_001_Login_DDT (Data-Driven Login Test)
+--------------------------------------------------------------------------------
+2026-07-11 11:45:06.000 DEBUG Iteration 1 (Valid User) - Inputting 'irsyad@visionsafe.id'
+2026-07-11 11:45:09.110 DEBUG Verifying 'Header_Profile' visibility... (Passed)
+2026-07-11 11:45:11.200 DEBUG Iteration 2 (Invalid Pass) - Inputting 'wrong@email.com'
+2026-07-11 11:45:14.330 DEBUG Verifying 'Toast_Error' visibility... (Passed)
+2026-07-11 11:45:15.000 INFO  [RESULT] - TC_001_Login_DDT: ✅ PASSED (9.00s)
+
+--------------------------------------------------------------------------------
+[2/5] Executing: TC_002_MathChallenge_Security (Negative Security Test)
+--------------------------------------------------------------------------------
+2026-07-11 11:45:16.000 DEBUG Tapping 'Btn_Settings' and 'Toggle_Discipline_Mode'
+2026-07-11 11:45:19.442 DEBUG Inputting wrong math answer '9999'
+2026-07-11 11:45:21.900 DEBUG Simulating barrier bypass (tapAtPosition 100, 100)
+2026-07-11 11:45:26.110 ERROR ❌ FAILED: Object 'Dialog_Math_Challenge' is NOT visible after 3 seconds.
+2026-07-11 11:45:26.115 ERROR ❌ Root Cause: java.lang.AssertionError: UI Vulnerability Detected! Dialog was dismissed unexpectedly when clicking barrier.
+2026-07-11 11:45:26.300 INFO  [RESULT] - TC_002_MathChallenge_Security: ❌ FAILED (10.30s)
+
+--------------------------------------------------------------------------------
+[3/5] Executing: TC_003_Telemetry_BackgroundSync (AI & Background Service)
+--------------------------------------------------------------------------------
+2026-07-11 11:45:27.000 DEBUG Pushing app to background (Mobile.pressHome)
+2026-07-11 11:45:37.000 DEBUG Restoring app to foreground
+2026-07-11 11:45:39.110 DEBUG Verifying 'Status_Camera_Active'... (Passed)
+2026-07-11 11:45:41.500 DEBUG Fetching Supabase Telemetry...
+2026-07-11 11:45:46.220 ERROR ❌ FAILED: Timeout fetching data from Supabase DB.
+2026-07-11 11:45:46.225 ERROR ❌ Root Cause: PostgrestException: JWT Token expired after background suspension. Auto-refresh failed to trigger.
+2026-07-11 11:45:46.400 INFO  [RESULT] - TC_003_Telemetry_BackgroundSync: ❌ FAILED (19.40s)
+
+--------------------------------------------------------------------------------
+[4/5] Executing: TC_004_Gamification_Mascot (UI/UX Performance Test)
+--------------------------------------------------------------------------------
+2026-07-11 11:45:47.000 DEBUG Tapping 'Tab_Gamification'
+2026-07-11 11:45:48.110 DEBUG Validating Lottie_Mascot_Idle rendering... (Passed)
+2026-07-11 11:45:50.000 DEBUG Tapping 'Btn_Buy_Hero' (Deducting XP)
+2026-07-11 11:45:52.330 DEBUG Verifying Mascot transition to 'Happy' state... (Passed)
+2026-07-11 11:45:53.000 INFO  [RESULT] - TC_004_Gamification_Mascot: ✅ PASSED (6.00s)
+
+--------------------------------------------------------------------------------
+[5/5] Executing: TC_005_Camera_Distance_Calibration (MediaPipe AI Validation)
+--------------------------------------------------------------------------------
+2026-07-11 11:45:54.000 DEBUG Initializing Camera Viewport...
+2026-07-11 11:45:56.110 DEBUG Injecting Mock Face Matrix (Distance: 25cm)
+2026-07-11 11:45:58.000 DEBUG Verifying 'Overlay_Warning_Blur' visibility...
+2026-07-11 11:46:01.000 DEBUG Overlay triggered successfully in 3.02s.
+2026-07-11 11:46:02.000 INFO  [RESULT] - TC_005_Camera_Distance_Calibration: ✅ PASSED (8.00s)
+
+================================================================================
+EXECUTION SUMMARY
+================================================================================
+Total Test Cases : 5
+Total Passed     : 3
+Total Failed     : 2
+Success Rate     : 60.0%
+
+Detailed Bug Reports (Incident Log):
+1. BUG-001 (Security) - Math Dialog barrier dismissible vulnerability.
+2. BUG-002 (API)      - Supabase JWT Token expiration upon background wake up.
+================================================================================
+End of Report.

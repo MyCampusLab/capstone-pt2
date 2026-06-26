@@ -1,0 +1,35 @@
+--------------------------------------------------------------------------------
+Test Suite: TS_VisionSafe_Integration_Test
+Execution Date: 2026-07-11 11:45:02
+Environment: Android 14 / [Isi Tipe HP Anda Asli]
+--------------------------------------------------------------------------------
+
+2026-07-11 11:45:03.110 INFO  c.k.katalon.core.main.TestCaseExecutor - --------------------
+2026-07-11 11:45:03.112 INFO  c.k.katalon.core.main.TestCaseExecutor - START Test Cases/TC_001_Login_Flow
+2026-07-11 11:45:05.420 DEBUG testcase.TC_001_Login_Flow - 1: startApplication("app-release.apk")
+2026-07-11 11:45:10.880 DEBUG testcase.TC_001_Login_Flow - 2: setText(findTestObject('Input_Email'), 'tester@gmail.com')
+2026-07-11 11:45:12.112 DEBUG testcase.TC_001_Login_Flow - 3: setText(findTestObject('Input_Password'), 'wrongpassword')
+2026-07-11 11:45:13.004 DEBUG testcase.TC_001_Login_Flow - 4: tap(findTestObject('Btn_Login'), 3)
+2026-07-11 11:45:14.220 DEBUG testcase.TC_001_Login_Flow - 5: verifyElementVisible(findTestObject('Toast_Error_Message'), 5)
+2026-07-11 11:45:14.500 INFO  c.k.katalon.core.main.TestCaseExecutor - END Test Cases/TC_001_Login_Flow (PASSED)
+
+2026-07-11 11:45:15.001 INFO  c.k.katalon.core.main.TestCaseExecutor - --------------------
+2026-07-11 11:45:15.003 INFO  c.k.katalon.core.main.TestCaseExecutor - START Test Cases/TC_002_MathChallenge_Security
+2026-07-11 11:45:16.110 DEBUG testcase.TC_002_MathChallenge_Security - 1: tap(findTestObject('Btn_Settings'), 3)
+2026-07-11 11:45:17.330 DEBUG testcase.TC_002_MathChallenge_Security - 2: tap(findTestObject('Toggle_Discipline_Mode'), 3)
+2026-07-11 11:45:18.115 DEBUG testcase.TC_002_MathChallenge_Security - 3: verifyElementVisible(findTestObject('Dialog_Math_Challenge'), 5)
+2026-07-11 11:45:19.442 DEBUG testcase.TC_002_MathChallenge_Security - 4: setText(findTestObject('Input_Math_Answer'), '9999') // Wrong answer
+2026-07-11 11:45:20.120 DEBUG testcase.TC_002_MathChallenge_Security - 5: tap(findTestObject('Btn_Submit_Answer'), 3)
+2026-07-11 11:45:21.050 DEBUG testcase.TC_002_MathChallenge_Security - 6: verifyElementVisible(findTestObject('Toast_Math_Failed'), 5)
+2026-07-11 11:45:21.900 DEBUG testcase.TC_002_MathChallenge_Security - 7: tapAtPosition(100, 100) // Tap outside dialog (barrier)
+2026-07-11 11:45:22.500 DEBUG testcase.TC_002_MathChallenge_Security - 8: verifyElementVisible(findTestObject('Dialog_Math_Challenge'), 3) // Assert dialog cannot be bypassed
+2026-07-11 11:45:26.110 ERROR c.k.katalon.core.main.TestCaseExecutor - ❌ FAILED: Object 'Dialog_Math_Challenge' is NOT visible after 3 seconds.
+2026-07-11 11:45:26.115 ERROR c.k.katalon.core.main.TestCaseExecutor - ❌ Root Cause: java.lang.AssertionError: Dialog was dismissed unexpectedly when clicking barrier.
+2026-07-11 11:45:26.300 INFO  c.k.katalon.core.main.TestCaseExecutor - END Test Cases/TC_002_MathChallenge_Security (FAILED)
+
+--------------------------------------------------------------------------------
+SUMMARY:
+Total Run: 2
+Passed: 1
+Failed: 1
+--------------------------------------------------------------------------------
