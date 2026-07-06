@@ -1,173 +1,159 @@
-import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:visionsafe/app/core/values/app_colors.dart';
-import 'package:visionsafe/app/core/values/app_text_styles.dart';
-import 'package:visionsafe/app/presentation/global_widgets/atoms/v_button.dart';
-import 'package:visionsafe/app/presentation/global_widgets/molecules/vizo_mascot.dart';
 import '../controllers/calibration_controller.dart';
-import 'widgets/scan_target_overlay.dart';
+import 'package:visionsafe/app/presentation/global_widgets/atoms/v_button.dart';
 
-/// View Kalibrasi Wajah Versi Pro dengan Live Camera Feed.
 class CalibrationView extends GetView<CalibrationController> {
   const CalibrationView({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
-      body: Stack(
-        children: [
-          // 1. Background Camera Preview (Pondasi AI)
-          _buildCameraPreview(),
-          
-          // 2. UI Overlay (Glassmorphism & Gradient)
-          _buildUiOverlay(),
-          
-          // 2b. Retro Scanning Bounding Box Frame (Interactive Visual Target)
-          Obx(() => ScanTargetOverlay(distance: controller.currentDistance.value)),
-          
-          // 3. Distance Meter & Info
-          _buildDistanceMeter(),
-          
-          // 4. Action Controls
-          _buildControls(),
-
-          // 5. Back Button
-          Positioned(
-            top: 16,
-            left: 16,
-            child: SafeArea(
-              child: IconButton(
-                onPressed: () => Get.back(),
-                icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.primaryDark),
-                style: IconButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  side: const BorderSide(color: AppColors.primaryDark, width: 2),
+      backgroundColor: const Color(0xFF1A1A1A), // Dark mode enterprise
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SizedBox(height: 20),
+              // Header
+              const Text(
+                "ADAPTASI SENSOR",
+                style: TextStyle(
+                  color: Color(0xFF00D2FF),
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 2.0,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                "Kalibrasi Jarak Mata",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 32,
+                  fontWeight: FontWeight.w900,
+                  height: 1.1,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                "Pegang HP Anda sejauh rentangan tangan (±40cm) agar sistem bisa mempelajari karakteristik wajah Anda.",
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 16,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              
+              const Spacer(),
+              
+              // Animasi Kalibrasi
+              Center(
+                child: Container(
+                  width: 250,
+                  height: 250,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: const Color(0xFF00D2FF).withValues(alpha: 0.3), width: 2),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF00D2FF).withValues(alpha: 0.1),
+                        blurRadius: 50,
+                        spreadRadius: 10,
+                      )
+                    ],
+                  ),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // Lottie Animation Scan (fallback ke icon jika lottie tidak ada)
+                      const Icon(Icons.face_retouching_natural, size: 120, color: Color(0xFF00D2FF)),
+                      
+                      // Progress Indicator melingkar
+                      Obx(() => controller.isCalibrating.value 
+                        ? SizedBox(
+                            width: 250,
+                            height: 250,
+                            child: CircularProgressIndicator(
+                              value: controller.progress.value,
+                              strokeWidth: 8,
+                              valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF00D2FF)),
+                            ),
+                          )
+                        : const SizedBox.shrink(),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
+              
+              const SizedBox(height: 40),
+              
+              // Status Real-time
+              Obx(() => Container(
+                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                ),
+                child: Column(
+                  children: [
+                    const Text(
+                      "STATUS SENSOR",
+                      style: TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      controller.currentRawDistance.value > 0 
+                        ? "Wajah Terdeteksi" 
+                        : "Wajah Belum Terlihat",
+                      style: TextStyle(
+                        color: controller.currentRawDistance.value > 0 ? const Color(0xFF00FF87) : const Color(0xFFFF6B6B),
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              )),
+              
+              const Spacer(),
+              
+              // Action Buttons
+              Obx(() => controller.isCalibrating.value
+                  ? const Center(
+                      child: Text(
+                        "Menganalisis wajah...",
+                        style: TextStyle(color: Color(0xFF00D2FF), fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                    )
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        VButton(
+                          onPressed: controller.startCalibration,
+                          label: "MULAI KALIBRASI",
+                          color: const Color(0xFF00D2FF),
+                        ),
+                        const SizedBox(height: 12),
+                        TextButton(
+                          onPressed: controller.cancelCalibration,
+                          child: const Text(
+                            "BATAL",
+                            style: TextStyle(color: Colors.white54, fontSize: 16, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ],
+                    ),
+              ),
+            ],
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCameraPreview() {
-    return GetBuilder<CalibrationController>(
-      builder: (controller) {
-        if (controller.cameraController == null || !controller.cameraController!.value.isInitialized) {
-          return Container(color: AppColors.background);
-        }
-        return SizedBox.expand(
-          child: FittedBox(
-            fit: BoxFit.cover,
-            child: SizedBox(
-              width: controller.cameraController!.value.previewSize!.height,
-              height: controller.cameraController!.value.previewSize!.width,
-              child: CameraPreview(controller.cameraController!),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildUiOverlay() {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            Colors.transparent,
-            AppColors.background.withAlpha(120),
-            AppColors.background,
-          ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildDistanceMeter() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Obx(() {
-            final double distance = controller.currentDistance.value;
-            final bool isDetected = distance > 0;
-            return Column(
-              children: [
-                // Vizo Mascot Reaktif
-                VizoMascot(
-                  size: 180,
-                  state: distance < 30 ? VizoState.worried : VizoState.idle,
-                ),
-                const SizedBox(height: 32),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(40),
-                    border: Border.all(
-                      color: distance >= 30 
-                          ? AppColors.primaryDark 
-                          : (isDetected ? Colors.orange : AppColors.danger), 
-                      width: 4
-                    ),
-                    boxShadow: const [BoxShadow(color: AppColors.primaryDark, offset: Offset(6, 6))],
-                  ),
-                  child: Text(
-                    isDetected ? "${distance.toInt()} CM" : "MENCARI WAJAH...",
-                    style: AppTextStyles.heading1.copyWith(
-                      color: AppColors.primaryDark, 
-                      fontSize: 36
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  distance >= 30 
-                    ? "JARAK SUDAH IDEAL!" 
-                    : (isDetected ? "TERLALU DEKAT! MUNDUR SEDIKIT" : "POSISIKAN WAJAH DI DEPAN KAMERA"),
-                  style: AppTextStyles.bodyBold.copyWith(
-                    color: distance >= 30 ? Colors.green.shade700 : AppColors.primaryDark,
-                    fontSize: 12,
-                    letterSpacing: 1.2
-                  ),
-                ),
-              ],
-            );
-          }),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildControls() {
-    return Positioned(
-      bottom: 60,
-      left: 40,
-      right: 40,
-      child: Column(
-        children: [
-          Obx(() {
-            final bool isTooClose = controller.currentDistance.value < 30;
-            return VButton(
-              label: "KUNCI JARAK AMAN",
-              icon: Icons.lock_outline_rounded,
-              isLoading: controller.isSaving.value,
-              onPressed: isTooClose ? null : () => controller.saveCalibration(),
-            );
-          }),
-          const SizedBox(height: 20),
-          Text(
-            "Minimal jarak aman adalah 30 CM.",
-            style: AppTextStyles.caption.copyWith(color: AppColors.primaryDark.withAlpha(180)),
-          ),
-        ],
       ),
     );
   }

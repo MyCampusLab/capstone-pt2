@@ -31,12 +31,12 @@ class AboutAppDialog extends StatelessWidget {
         const SizedBox(height: 16),
         _buildSection(
           "PENGEMBANG",
-          "Aplikasi ini adalah hasil riset mutakhir yang dirancang khusus dengan arsitektur Enterprise, memanfaatkan AI Edge Computing untuk deteksi wajah tanpa kompromi privasi.",
+          "Aplikasi ini merupakan karya Tugas Akhir (Capstone Project) dari M. Irsyad Fachryanto, mahasiswa Universitas Harkat Negeri. Dirancang di bawah bimbingan dosen sebagai dedikasi akademis untuk menciptakan solusi perlindungan mata berbasis Edge AI yang aman bagi masyarakat.",
         ),
         const SizedBox(height: 16),
         _buildSection(
           "VERSI",
-          "VisionSafe v1.0.0 Elite Edition\nPowered by SDA Framework V2",
+          "VisionSafe v1.0.0 Capstone Edition\nTeknologi Edge AI Terintegrasi",
         ),
       ],
     );

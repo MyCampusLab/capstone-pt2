@@ -8,6 +8,7 @@ import 'package:visionsafe/app/data/providers/vision_service_provider.dart';
 import 'package:visionsafe/app/presentation/global_widgets/molecules/v_dialog.dart';
 import 'package:visionsafe/app/presentation/global_widgets/molecules/v_toast.dart';
 import 'package:visionsafe/app/presentation/global_widgets/molecules/vizo_mascot.dart';
+import 'package:visionsafe/app/presentation/global_widgets/atoms/v_button.dart';
 
 class DistanceSetterDialog extends StatefulWidget {
   final ConfigService config;
@@ -16,9 +17,9 @@ class DistanceSetterDialog extends StatefulWidget {
 
   static void show(ConfigService config) {
     VDialog.show(
-      title: "Set Jarak Aman",
+      title: "Target Jarak",
       content: DistanceSetterDialog(config: config),
-      onConfirm: () {},
+      hideButtons: true,
     );
   }
 
@@ -114,15 +115,12 @@ class _DistanceSetterDialogState extends State<DistanceSetterDialog> {
               child: Text("BATAL", style: AppTextStyles.bodyBold.copyWith(color: AppColors.grey)),
             ),
             const SizedBox(width: 12),
-            ElevatedButton(
-              onPressed: _isLoading ? null : _submit,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: AppColors.primaryDark,
-                side: const BorderSide(color: AppColors.primaryDark, width: 2),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-              ),
-              child: Text(_isLoading ? "MEMPROSES..." : "SIMPAN", style: AppTextStyles.bodyBold),
+            VButton(
+              onPressed: _submit,
+              isLoading: _isLoading,
+              label: "SIMPAN",
+              color: AppColors.primary,
+              width: 120,
             ),
           ],
         ),

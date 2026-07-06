@@ -6,6 +6,7 @@ import 'package:visionsafe/app/core/values/app_text_styles.dart';
 import 'package:visionsafe/app/data/models/news_model.dart';
 import 'package:visionsafe/app/presentation/global_widgets/molecules/vizo_mascot.dart';
 import 'package:visionsafe/app/presentation/global_widgets/molecules/vizo_news_mascot.dart';
+import 'package:visionsafe/app/presentation/global_widgets/atoms/v_button.dart';
 
 class NewsDetailView extends StatelessWidget {
   const NewsDetailView({super.key});
@@ -156,23 +157,11 @@ class NewsDetailView extends StatelessWidget {
               const SizedBox(height: 32),
               SizedBox(
                 width: double.infinity,
-                child: ElevatedButton.icon(
+                child: VButton(
                   onPressed: () => _launchUrl(news.url),
-                  icon: const Icon(Icons.open_in_browser_rounded, size: 18),
-                  label: const Text(
-                    "VERIFIKASI SUMBER MEDIS",
-                    style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 0.8, fontSize: 13),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      side: const BorderSide(color: AppColors.primaryDark, width: 2),
-                    ),
-                    elevation: 0,
-                  ),
+                  icon: Icons.open_in_browser_rounded,
+                  label: "VERIFIKASI SUMBER MEDIS",
+                  color: AppColors.primary,
                 ),
               ),
               const SizedBox(height: 30),

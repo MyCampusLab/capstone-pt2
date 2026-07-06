@@ -111,6 +111,8 @@ void main() {
         createdAt: DateTime.now().toIso8601String(),
       ));
 
+      controller.agreedToTerms.value = true;
+      
       when(mockAuthRepository.register(any, any, name: anyNamed('name')))
           .thenAnswer((_) async => mockResponse);
 
@@ -128,6 +130,7 @@ void main() {
       controller.emailController.text = 'hero@test.com';
       controller.passwordController.text = 'password123';
       controller.confirmPasswordController.text = 'password123';
+      controller.agreedToTerms.value = true;
       
       when(mockAuthRepository.register(any, any, name: anyNamed('name')))
           .thenThrow(Exception('Registration failed'));

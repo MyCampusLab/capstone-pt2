@@ -7,6 +7,7 @@ import 'package:visionsafe/app/core/values/app_text_styles.dart';
 import 'package:visionsafe/app/presentation/global_widgets/molecules/v_dialog.dart';
 import 'package:visionsafe/app/presentation/global_widgets/molecules/v_toast.dart';
 import 'package:visionsafe/app/presentation/global_widgets/molecules/vizo_mascot.dart';
+import 'package:visionsafe/app/presentation/global_widgets/atoms/v_button.dart';
 
 class JwtDeveloperDialog extends StatelessWidget {
   const JwtDeveloperDialog({super.key});
@@ -56,18 +57,14 @@ class JwtDeveloperDialog extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
-        ElevatedButton.icon(
+        VButton(
           onPressed: () {
             Clipboard.setData(ClipboardData(text: token));
             VToast.show("Tersalin", "Token JWT disalin ke clipboard!", state: VizoState.happy);
           },
-          icon: const Icon(Icons.copy_rounded, size: 18),
-          label: const Text("SALIN TOKEN JWT"),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primaryDark,
-            foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          ),
+          icon: Icons.copy_rounded,
+          label: "SALIN TOKEN JWT",
+          color: AppColors.primaryDark,
         ),
       ],
     );

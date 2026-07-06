@@ -5,6 +5,7 @@ import 'package:visionsafe/app/data/services/reward_service.dart';
 import 'package:hive/hive.dart';
 import 'package:visionsafe/app/presentation/global_widgets/molecules/v_toast.dart';
 import 'package:visionsafe/app/presentation/global_widgets/molecules/vizo_mascot.dart';
+import 'package:visionsafe/app/presentation/modules/quests/controllers/quests_controller.dart' as visionsafe_quests;
 
 class EyeExerciseController extends GetxController {
   final _rewardService = Get.find<RewardService>();
@@ -82,6 +83,14 @@ class EyeExerciseController extends GetxController {
     if (count >= 5) {
       await _rewardService.unlockSticker('s4');
     }
+    
+    await _rewardService.addXp(50); // Tambahan XP untuk gamifikasi
+    
+    // Trigger Gamifikasi Quest Harian
+    try {
+      final questsCtrl = Get.find<visionsafe_quests.QuestsController>();
+      questsCtrl.markExerciseCompleted();
+    } catch (_) {}
 
     if (Get.currentRoute == '/eye-exercise') {
       Get.back();

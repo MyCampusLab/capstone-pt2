@@ -38,8 +38,11 @@ class NewsController extends GetxController {
     _loadMore(isInitial: true);
   }
 
+  bool _isDisposed = false;
+
   @override
   void onClose() {
+    _isDisposed = true;
     scrollController.dispose();
     super.onClose();
   }
@@ -74,6 +77,7 @@ class NewsController extends GetxController {
       isLoadingMore.value = true;
       // Soft artificial delay for premium shimmers/smooth visual transitions
       await Future.delayed(const Duration(milliseconds: 400));
+      if (_isDisposed) return;
     }
 
     final filtered = _getFilteredArticles();

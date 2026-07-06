@@ -1,5 +1,5 @@
 name: visionsafe
-description: "A new Flutter project."
+description: "VisionSafe: Enterprise-grade Eye Health & Distance Protection with AI."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.0.0+1
+version: 1.0.1+4
 
 environment:
   sdk: ^3.10.1
@@ -61,6 +61,10 @@ dependencies:
   # Path Provider: Lokasi file log lokal
   path_provider: ^2.1.3
 
+  # PDF & Printing: Untuk Ekspor Laporan Kesehatan Mata
+  pdf: ^3.11.1
+  printing: ^5.13.0
+
   # Logger: Logging yang rapi (Bukan print() biasa)
   logger: ^2.3.0
 
@@ -79,6 +83,19 @@ dependencies:
 
   # Crypto: Untuk enkripsi Box Hive (Standar Keamanan)
   crypto: ^3.0.3
+
+  # Environment Variables & Security
+  flutter_dotenv: ^5.1.0
+
+  # Firebase Crashlytics untuk Production Monitoring
+  firebase_core: ^2.24.2
+  firebase_crashlytics: ^3.4.9
+  firebase_analytics: ^10.8.0
+  intl: ^0.20.2
+  firebase_messaging: ^14.7.10
+  confetti: ^0.8.0
+  shimmer: ^3.0.0
+  workmanager: ^0.9.0+3
 
 dev_dependencies:
   flutter_test:
@@ -99,14 +116,24 @@ dev_dependencies:
   patrol_finders: ^3.2.0
   patrol_cli: ^4.3.1
 
-  flutter_launcher_icons: ^0.13.1
+  flutter_launcher_icons: ^0.14.4
+  flutter_native_splash: ^2.4.7
 
 flutter_launcher_icons:
-  android: "launcher_icon"
+  android: true
   ios: false
-  image_path: "assets/images/app_icon_release.png"
-  adaptive_icon_background: "#003366"
-  adaptive_icon_foreground: "assets/images/vizo_eye_foreground.png"
+  image_path: "PlayStore_Assets/App_Icon_512x512.png"
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "PlayStore_Assets/App_Icon_512x512.png"
+
+flutter_native_splash:
+  color: "#FFFFFF"
+  image: "assets/images/transparent_splash.png"
+  android: true
+  ios: false
+  android_12:
+    image: "assets/images/transparent_splash.png"
+    icon_background_color: "#FFFFFF"
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -123,6 +150,7 @@ flutter:
   assets:
     - assets/images/
     - assets/animations/
+    - .env
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

@@ -14,8 +14,14 @@ class FakeRewardService extends GetxService implements RewardService {
   }
 
   @override
+  Future<void> addXp(int amount, {bool isQuest = false}) async {}
+
+  @override
   dynamic noSuchMethod(Invocation invocation) {
-    return null;
+    if (invocation.memberName == #addXp) {
+      return Future<void>.value();
+    }
+    return super.noSuchMethod(invocation);
   }
 }
 

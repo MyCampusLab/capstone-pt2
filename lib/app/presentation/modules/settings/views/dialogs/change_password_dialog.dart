@@ -6,6 +6,7 @@ import 'package:visionsafe/app/data/services/auth_service.dart';
 import 'package:visionsafe/app/presentation/global_widgets/molecules/v_dialog.dart';
 import 'package:visionsafe/app/presentation/global_widgets/molecules/v_toast.dart';
 import 'package:visionsafe/app/presentation/global_widgets/molecules/vizo_mascot.dart';
+import 'package:visionsafe/app/presentation/global_widgets/atoms/v_button.dart';
 
 class ChangePasswordDialog extends StatefulWidget {
   final AuthService authService;
@@ -16,7 +17,7 @@ class ChangePasswordDialog extends StatefulWidget {
     VDialog.show(
       title: "Ganti Password",
       content: ChangePasswordDialog(authService: authService),
-      onConfirm: () {},
+      hideButtons: true,
     );
   }
 
@@ -82,15 +83,12 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
               child: Text("BATAL", style: AppTextStyles.bodyBold.copyWith(color: AppColors.grey)),
             ),
             const SizedBox(width: 12),
-            ElevatedButton(
-              onPressed: _isLoading ? null : _submit,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: AppColors.primaryDark,
-                side: const BorderSide(color: AppColors.primaryDark, width: 2),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-              ),
-              child: Text(_isLoading ? "MEMPROSES..." : "GANTI", style: AppTextStyles.bodyBold),
+            VButton(
+              onPressed: _submit,
+              isLoading: _isLoading,
+              label: "GANTI",
+              color: AppColors.primary,
+              width: 120,
             ),
           ],
         ),

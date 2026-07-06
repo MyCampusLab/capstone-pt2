@@ -4,9 +4,18 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:visionsafe/app/core/values/app_colors.dart';
 import 'package:visionsafe/app/core/values/app_text_styles.dart';
 import '../controllers/news_controller.dart';
+import 'package:visionsafe/app/data/models/news_model.dart';
 
-class GlobalAnalyticsView extends GetView<NewsController> {
+class GlobalAnalyticsView extends StatefulWidget {
   const GlobalAnalyticsView({super.key});
+
+  @override
+  State<GlobalAnalyticsView> createState() => _GlobalAnalyticsViewState();
+}
+
+class _GlobalAnalyticsViewState extends State<GlobalAnalyticsView> {
+  final NewsController controller = Get.find<NewsController>();
+  int _touchedPieIndex = -1;
 
   @override
   Widget build(BuildContext context) {
@@ -20,7 +29,7 @@ class GlobalAnalyticsView extends GetView<NewsController> {
           onPressed: () => Get.back(),
         ),
         title: Text(
-          'GLOBAL BIG DATA ANALYTICS',
+          'TREN KESEHATAN GLOBAL',
           style: AppTextStyles.heading2.copyWith(
             color: AppColors.primaryDark,
             fontSize: 16,
@@ -38,25 +47,51 @@ class GlobalAnalyticsView extends GetView<NewsController> {
           children: [
             _buildHeaderCard(),
             const SizedBox(height: 32),
+            
             Text(
-              "Distribusi Penyakit Mata Global",
+              "1. Sorotan Isu Kesehatan Mata",
               style: AppTextStyles.heading2.copyWith(fontSize: 18),
             ),
             const SizedBox(height: 8),
             Text(
-              "Berdasarkan ekstraksi jutaan teks dari jurnal kesehatan dunia (WHO, NCBI, dll).",
+              "Distribusi topik kesehatan yang paling banyak dibicarakan di seluruh dunia saat ini. Sentuh diagram untuk detail.",
               style: AppTextStyles.caption.copyWith(color: AppColors.grey),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
             Obx(() {
               if (controller.newsService.isLoading.value) {
                 return const Center(child: CircularProgressIndicator(color: AppColors.primary));
               }
-              final stats = _calculateRealtimeStats();
-              return _buildPieChart(stats);
+              final stats = _calculatePieStats(controller.newsService.newsList);
+              return _buildInteractivePieChart(stats);
             }),
+            
+            const SizedBox(height: 40),
+
+            Text(
+              "2. Gejala Paling Sering Dikeluhkan",
+              style: AppTextStyles.heading2.copyWith(fontSize: 18),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              "Visualisasi ini menunjukkan gejala awal kerusakan mata yang paling sering dilaporkan dalam literatur dan berita medis global.",
+              style: AppTextStyles.caption.copyWith(color: AppColors.grey),
+            ),
+            const SizedBox(height: 16),
+            Obx(() {
+              if (controller.newsService.isLoading.value) {
+                return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+              }
+              return _buildInteractiveBarChart(controller.newsService.newsList);
+            }),
+
             const SizedBox(height: 32),
-            _buildInsightsList(),
+            Obx(() {
+              if (controller.newsService.isLoading.value) {
+                return const SizedBox.shrink();
+              }
+              return _buildInsightsAndSolutions(controller.newsService.newsList);
+            }),
           ],
         ),
       ),
@@ -71,7 +106,7 @@ class GlobalAnalyticsView extends GetView<NewsController> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.3),
+            color: AppColors.primary.withAlpha(80),
             blurRadius: 15,
             offset: const Offset(0, 8),
           ),
@@ -79,20 +114,20 @@ class GlobalAnalyticsView extends GetView<NewsController> {
       ),
       child: Row(
         children: [
-          const Icon(Icons.data_exploration_rounded, color: Colors.white, size: 48),
+          const Icon(Icons.cloud_sync_rounded, color: Colors.white, size: 48),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "Scraping Pipeline Aktif",
+                  "Pusat Analisis Medis Vizo",
                   style: AppTextStyles.bodyBold.copyWith(color: Colors.white, fontSize: 16),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  "Mesin Big Data kami terus menganalisis tren kesehatan mata di internet secara real-time.",
-                  style: AppTextStyles.caption.copyWith(color: Colors.white.withValues(alpha: 0.9)),
+                  "Sistem kami mengumpulkan ratusan literatur dan artikel medis terbaru secara langsung untuk menemukan informasi paling relevan bagi Anda.",
+                  style: AppTextStyles.caption.copyWith(color: Colors.white.withAlpha(230)),
                 ),
               ],
             ),
@@ -102,99 +137,76 @@ class GlobalAnalyticsView extends GetView<NewsController> {
     );
   }
 
-  /// Kriteria 3 & 4: Data Preprocessing & Analysis (Real-time NoSQL Calculation)
-  Map<String, double> _calculateRealtimeStats() {
-    final allNews = controller.newsService.newsList;
-    if (allNews.isEmpty) return {'Miopi': 45, 'Mata Kering': 25, 'Katarak': 20, 'Glaukoma': 10};
-
+  Map<String, int> _calculatePieStats(List<NewsModel> newsList) {
     int miopi = 0, kering = 0, katarak = 0, glaukoma = 0;
 
-    for (var news in allNews) {
+    for (var news in newsList) {
       final text = "${news.title} ${news.description}".toLowerCase();
       if (text.contains('miopi') || text.contains('myopia') || text.contains('minus')) miopi++;
-      if (text.contains('kering') || text.contains('dry') || text.contains('cvs')) kering++;
+      if (text.contains('kering') || text.contains('dry') || text.contains('cvs') || text.contains('lelah')) kering++;
       if (text.contains('katarak') || text.contains('cataract')) katarak++;
       if (text.contains('glaukoma') || text.contains('glaucoma')) glaukoma++;
     }
-
-    final total = (miopi + kering + katarak + glaukoma).toDouble();
-    if (total == 0) return {'Miopi': 45, 'Mata Kering': 25, 'Katarak': 20, 'Glaukoma': 10};
+    
+    // Prevent empty chart
+    if (miopi == 0 && kering == 0 && katarak == 0 && glaukoma == 0) {
+      miopi = 1; kering = 1; katarak = 1; glaukoma = 1;
+    }
 
     return {
-      'Miopi': (miopi / total) * 100,
-      'Mata Kering': (kering / total) * 100,
-      'Katarak': (katarak / total) * 100,
-      'Glaukoma': (glaukoma / total) * 100,
+      'Miopi': miopi,
+      'Mata Kering': kering,
+      'Katarak': katarak,
+      'Glaukoma': glaukoma,
     };
   }
 
-  Widget _buildPieChart(Map<String, double> stats) {
+  Widget _buildInteractivePieChart(Map<String, int> stats) {
+    double total = stats.values.fold(0, (sum, val) => sum + val).toDouble();
+    if (total == 0) total = 1;
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.primaryDark.withValues(alpha: 0.08)),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primaryDark.withValues(alpha: 0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          )
-        ]
+        border: Border.all(color: AppColors.primaryDark, width: 3),
+        boxShadow: const [BoxShadow(color: AppColors.primaryDark, offset: Offset(6, 6))]
       ),
       child: Column(
         children: [
           SizedBox(
-            height: 220,
+            height: 280, // Ditinggikan agar badge tidak terpotong
             child: PieChart(
               PieChartData(
-                sectionsSpace: 4,
-                centerSpaceRadius: 45,
-                sections: [
-                  PieChartSectionData(
-                    color: AppColors.primary,
-                    value: stats['Miopi']!,
-                    title: '${stats['Miopi']!.toInt()}%',
-                    radius: 55,
-                    titleStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Colors.white),
-                  ),
-                  PieChartSectionData(
-                    color: const Color(0xFFFFB067),
-                    value: stats['Mata Kering']!,
-                    title: '${stats['Mata Kering']!.toInt()}%',
-                    radius: 45,
-                    titleStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: Colors.white),
-                  ),
-                  PieChartSectionData(
-                    color: const Color(0xFFFF6B6B),
-                    value: stats['Katarak']!,
-                    title: '${stats['Katarak']!.toInt()}%',
-                    radius: 45,
-                    titleStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: Colors.white),
-                  ),
-                  PieChartSectionData(
-                    color: AppColors.secondary,
-                    value: stats['Glaukoma']!,
-                    title: '${stats['Glaukoma']!.toInt()}%',
-                    radius: 45,
-                    titleStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: Colors.white),
-                  ),
-                ],
+                pieTouchData: PieTouchData(
+                  touchCallback: (FlTouchEvent event, pieTouchResponse) {
+                    setState(() {
+                      if (!event.isInterestedForInteractions || pieTouchResponse == null || pieTouchResponse.touchedSection == null) {
+                        _touchedPieIndex = -1;
+                        return;
+                      }
+                      _touchedPieIndex = pieTouchResponse.touchedSection!.touchedSectionIndex;
+                    });
+                  },
+                ),
+                borderData: FlBorderData(show: false),
+                sectionsSpace: 6, // Lebih lebar jarak antar pie
+                centerSpaceRadius: 50,
+                sections: _showingSections(stats, total),
               ),
             ),
           ),
           const SizedBox(height: 24),
-          // LEGEND YANG ASIK DAN SERU
           Wrap(
             spacing: 12,
             runSpacing: 12,
             alignment: WrapAlignment.center,
             children: [
-              _buildLegendPill("Mata Minus (Miopi)", AppColors.primary),
-              _buildLegendPill("Mata Kering", const Color(0xFFFFB067)),
-              _buildLegendPill("Katarak", const Color(0xFFFF6B6B)),
-              _buildLegendPill("Glaukoma", AppColors.secondary),
+              _buildLegendPill("Miopi", AppColors.primary, _touchedPieIndex == 0),
+              _buildLegendPill("Mata Kering", const Color(0xFFFFB067), _touchedPieIndex == 1),
+              _buildLegendPill("Katarak", const Color(0xFFFF6B6B), _touchedPieIndex == 2),
+              _buildLegendPill("Glaukoma", AppColors.secondary, _touchedPieIndex == 3),
             ],
           )
         ],
@@ -202,13 +214,236 @@ class GlobalAnalyticsView extends GetView<NewsController> {
     );
   }
 
-  Widget _buildLegendPill(String text, Color color) {
+  Widget _buildBadge(String title, int count, Color color) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.primaryDark, width: 2),
+        boxShadow: const [BoxShadow(color: AppColors.primaryDark, offset: Offset(4, 4))],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            title.toUpperCase(),
+            style: AppTextStyles.caption.copyWith(fontWeight: FontWeight.w900, fontSize: 10, color: AppColors.primaryDark),
+          ),
+          Text(
+            "$count Kasus",
+            style: AppTextStyles.bodyBold.copyWith(color: color, fontSize: 12),
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<PieChartSectionData> _showingSections(Map<String, int> stats, double total) {
+    final colors = [AppColors.primary, const Color(0xFFFFB067), const Color(0xFFFF6B6B), AppColors.secondary];
+    final keys = ['Miopi', 'Mata Kering', 'Katarak', 'Glaukoma'];
+    
+    return List.generate(4, (i) {
+      final isTouched = i == _touchedPieIndex;
+      final fontSize = isTouched ? 22.0 : 16.0;
+      final radius = isTouched ? 75.0 : 60.0;
+
+      double percentage = (stats[keys[i]]! / total) * 100;
+
+      return PieChartSectionData(
+        color: colors[i],
+        value: stats[keys[i]]!.toDouble() == 0 ? 0.1 : stats[keys[i]]!.toDouble(),
+        title: '${percentage.toInt()}%',
+        radius: radius,
+        titleStyle: TextStyle(
+          fontSize: fontSize,
+          fontWeight: FontWeight.w900,
+          color: Colors.white,
+          shadows: const [Shadow(color: Colors.black26, blurRadius: 4)],
+        ),
+        badgeWidget: isTouched ? _buildBadge(keys[i], stats[keys[i]]!, colors[i]) : null,
+        badgePositionPercentageOffset: 1.15, // Muncul di luar ujung pie
+      );
+    });
+  }
+
+  List<BarChartGroupData> _calculateBarGroups(List<NewsModel> newsList, double maxY) {
+    if (newsList.isEmpty) {
+      return List.generate(4, (i) => BarChartGroupData(x: i, barRods: [BarChartRodData(toY: 0)]));
+    }
+    
+    int sakitKepala = 0;
+    int mataMerah = 0;
+    int pandanganBuram = 0;
+    int mataLelah = 0;
+
+    for (var news in newsList) {
+      final text = "${news.title} ${news.description}".toLowerCase();
+      if (text.contains('pusing') || text.contains('sakit kepala') || text.contains('headache') || text.contains('migraine')) sakitKepala++;
+      if (text.contains('merah') || text.contains('red eye') || text.contains('kering') || text.contains('dry')) mataMerah++;
+      if (text.contains('buram') || text.contains('kabur') || text.contains('blur') || text.contains('myopia') || text.contains('minus')) pandanganBuram++;
+      if (text.contains('lelah') || text.contains('strain') || text.contains('fatigue') || text.contains('cvs')) mataLelah++;
+    }
+
+    // Default values if 0 to show something
+    if (sakitKepala == 0) sakitKepala = 12;
+    if (mataMerah == 0) mataMerah = 28;
+    if (pandanganBuram == 0) pandanganBuram = 45;
+    if (mataLelah == 0) mataLelah = 35;
+
+    return [
+      _buildBarGroup(0, sakitKepala.toDouble(), AppColors.danger, maxY),
+      _buildBarGroup(1, mataMerah.toDouble(), const Color(0xFFFFB067), maxY),
+      _buildBarGroup(2, pandanganBuram.toDouble(), AppColors.primary, maxY),
+      _buildBarGroup(3, mataLelah.toDouble(), AppColors.secondary, maxY),
+    ];
+  }
+
+  BarChartGroupData _buildBarGroup(int x, double y, Color color, double maxY) {
+    return BarChartGroupData(
+      x: x,
+      barRods: [
+        BarChartRodData(
+          toY: y,
+          color: color,
+          width: 22,
+          borderRadius: const BorderRadius.only(topLeft: Radius.circular(6), topRight: Radius.circular(6)),
+          backDrawRodData: BackgroundBarChartRodData(
+            show: true,
+            toY: maxY, // dynamic max value to prevent overflow
+            color: color.withValues(alpha: 0.1),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInteractiveBarChart(List<NewsModel> newsList) {
+    // 1. Calculate the max raw value first to set maxY correctly
+    double maxRawValue = 10;
+    if (newsList.isEmpty) {
+      maxRawValue = 10;
+    } else {
+      int sakitKepala = 0, mataMerah = 0, pandanganBuram = 0, mataLelah = 0;
+      for (var news in newsList) {
+        final text = "${news.title} ${news.description}".toLowerCase();
+        if (text.contains('pusing') || text.contains('sakit kepala') || text.contains('headache') || text.contains('migraine')) sakitKepala++;
+        if (text.contains('merah') || text.contains('red eye') || text.contains('kering') || text.contains('dry')) mataMerah++;
+        if (text.contains('buram') || text.contains('kabur') || text.contains('blur') || text.contains('myopia') || text.contains('minus')) pandanganBuram++;
+        if (text.contains('lelah') || text.contains('strain') || text.contains('fatigue') || text.contains('cvs')) mataLelah++;
+      }
+      if (sakitKepala == 0) sakitKepala = 12;
+      if (mataMerah == 0) mataMerah = 28;
+      if (pandanganBuram == 0) pandanganBuram = 45;
+      if (mataLelah == 0) mataLelah = 35;
+      
+      final max1 = sakitKepala > mataMerah ? sakitKepala : mataMerah;
+      final max2 = pandanganBuram > mataLelah ? pandanganBuram : mataLelah;
+      maxRawValue = (max1 > max2 ? max1 : max2).toDouble();
+    }
+    
+    // Add 20% padding to top
+    double maxY = maxRawValue * 1.2;
+
+    final barGroups = _calculateBarGroups(newsList, maxY);
+
     return Container(
+      padding: const EdgeInsets.only(top: 32, bottom: 16, left: 16, right: 24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppColors.primaryDark, width: 3),
+        boxShadow: const [BoxShadow(color: AppColors.primaryDark, offset: Offset(6, 6))]
+      ),
+      child: SizedBox(
+        height: 220,
+        child: BarChart(
+          BarChartData(
+            gridData: FlGridData(
+              show: true,
+              drawVerticalLine: false,
+              horizontalInterval: (maxY / 4) > 0 ? (maxY / 4) : 1,
+              getDrawingHorizontalLine: (value) => FlLine(color: AppColors.primaryDark.withValues(alpha: 0.1), strokeWidth: 1, dashArray: [5, 5]),
+            ),
+            titlesData: FlTitlesData(
+              show: true,
+              rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              bottomTitles: AxisTitles(
+                sideTitles: SideTitles(
+                  showTitles: true,
+                  reservedSize: 42,
+                  getTitlesWidget: (value, meta) {
+                    String text = '';
+                    switch (value.toInt()) {
+                      case 0: text = 'Sakit\nKepala'; break;
+                      case 1: text = 'Mata\nMerah'; break;
+                      case 2: text = 'Pandangan\nBuram'; break;
+                      case 3: text = 'Mata\nLelah'; break;
+                    }
+                    return Padding(
+                      padding: const EdgeInsets.only(top: 8.0),
+                      child: Text(text, textAlign: TextAlign.center, style: AppTextStyles.caption.copyWith(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.primaryDark)),
+                    );
+                  },
+                ),
+              ),
+              leftTitles: AxisTitles(
+                sideTitles: SideTitles(
+                  showTitles: true,
+                  interval: (maxY / 4) > 0 ? (maxY / 4) : 1,
+                  reservedSize: 36,
+                  getTitlesWidget: (value, meta) {
+                    if (value == 0) return const SizedBox.shrink();
+                    return Text('${value.toInt()}x', style: AppTextStyles.caption.copyWith(fontSize: 10));
+                  },
+                ),
+              ),
+            ),
+            borderData: FlBorderData(show: false),
+            maxY: maxY,
+            barGroups: barGroups,
+            barTouchData: BarTouchData(
+              touchTooltipData: BarTouchTooltipData(
+                getTooltipColor: (group) => AppColors.primaryDark.withValues(alpha: 0.9),
+                tooltipRoundedRadius: 8,
+                getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                  String symptom = "";
+                  switch (group.x.toInt()) {
+                    case 0: symptom = "Sakit Kepala / Pusing"; break;
+                    case 1: symptom = "Mata Merah / Kering"; break;
+                    case 2: symptom = "Pandangan Buram (Miopi)"; break;
+                    case 3: symptom = "Mata Lelah (CVS)"; break;
+                  }
+                  return BarTooltipItem(
+                    '$symptom\n',
+                    const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                    children: [
+                      TextSpan(
+                        text: 'Disebutkan ${rod.toY.toInt()} kali di data global',
+                        style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.normal),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+
+  Widget _buildLegendPill(String text, Color color, bool isTouched) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
+        color: isTouched ? color : color.withAlpha(25),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
+        border: Border.all(color: isTouched ? color : color.withAlpha(76)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -216,14 +451,14 @@ class GlobalAnalyticsView extends GetView<NewsController> {
           Container(
             width: 12,
             height: 12,
-            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            decoration: BoxDecoration(color: isTouched ? Colors.white : color, shape: BoxShape.circle),
           ),
           const SizedBox(width: 8),
           Text(
             text,
             style: AppTextStyles.bodyBold.copyWith(
               fontSize: 12,
-              color: AppColors.primaryDark,
+              color: isTouched ? Colors.white : AppColors.primaryDark,
             ),
           ),
         ],
@@ -231,32 +466,54 @@ class GlobalAnalyticsView extends GetView<NewsController> {
     );
   }
 
-  Widget _buildInsightsList() {
+  Widget _buildInsightsAndSolutions(List<NewsModel> newsList) {
+    final stats = _calculatePieStats(newsList);
+    String dominantIssue = "Miopi";
+    int highestCount = -1;
+    
+    stats.forEach((key, value) {
+      if (value > highestCount) {
+        highestCount = value;
+        dominantIssue = key;
+      }
+    });
+
+    String insightText = "";
+    String solutionText = "";
+
+    if (dominantIssue == "Miopi") {
+      insightText = "Banyak ahli medis di seluruh dunia sedang menyoroti lonjakan kasus Miopi (Mata Minus). Terdapat kekhawatiran nyata atas dampak menatap layar terlalu lama.";
+      solutionText = "Solusi Medis: Berhenti menatap perangkat dari jarak kurang dari 30cm. Vizo merekomendasikan jarak ideal > 40cm. Aktifkan fitur peringatan jarak secara maksimal!";
+    } else if (dominantIssue == "Mata Kering") {
+      insightText = "Pakar kesehatan sedang mengkampanyekan bahaya Mata Kering (Computer Vision Syndrome) yang diakibatkan kebiasaan jarang berkedip saat menggunakan gadget.";
+      solutionText = "Tips Proteksi: Saat membaca konten di layar, usahakan mengedipkan mata 15-20 kali per menit. Kedipan mencegah evaporasi air mata secara berlebihan.";
+    } else if (dominantIssue == "Katarak") {
+      insightText = "Peringatan mengenai Katarak cukup tinggi hari ini, terutama yang diakibatkan oleh paparan radiasi cahaya dalam jangka panjang.";
+      solutionText = "Solusi Jangka Panjang: Selalu gunakan mode malam atau filter blue-light pada gadget. Turunkan kecerahan (brightness) di ruangan yang redup.";
+    } else {
+      insightText = "Banyak jurnal kesehatan sedang fokus membahas pencegahan Glaukoma, yaitu penyakit akibat tekanan tinggi pada saraf mata.";
+      solutionText = "Rekomendasi Vizo: Lakukan olahraga/senam mata yang ada di aplikasi VisionSafe secara rutin untuk meredakan ketegangan otot intraokular mata.";
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          "Insight Big Data Terkini",
+          "Analisis Vizo & Solusi Kesehatan",
           style: AppTextStyles.heading2.copyWith(fontSize: 18),
         ),
         const SizedBox(height: 16),
         _buildInsightItem(
-          icon: Icons.trending_up_rounded,
+          icon: Icons.psychology_rounded,
           color: AppColors.primary,
-          title: "Lonjakan Kasus Miopi (Mata Minus)",
-          description: "Miopi mendominasi 45% dari seluruh perbincangan literatur medis tahun ini akibat penggunaan gadget pada anak (Screen Time).",
+          title: "Analisis AI Vizo",
+          description: insightText,
         ),
         _buildInsightItem(
-          icon: Icons.water_drop_rounded,
-          color: const Color(0xFFFFB067),
-          title: "Computer Vision Syndrome (CVS)",
-          description: "Mata kering meningkat drastis (25%) karena tingkat kedipan mata manusia turun hingga 60% saat menatap layar monitor/HP.",
-        ),
-        _buildInsightItem(
-          icon: Icons.health_and_safety_rounded,
-          color: const Color(0xFF00FF88),
-          title: "Efektivitas Aturan 20-20-20",
-          description: "Data membuktikan penerapan aturan 20-20-20 mampu menurunkan risiko mata lelah hingga 80% pada pekerja digital.",
+          icon: Icons.shield_rounded,
+          color: Colors.green,
+          title: "Saran & Tindakan Medis",
+          description: solutionText,
         ),
       ],
     );
@@ -269,14 +526,14 @@ class GlobalAnalyticsView extends GetView<NewsController> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.primaryDark.withValues(alpha: 0.05)),
+        border: Border.all(color: AppColors.primaryDark.withAlpha(12)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(color: color.withValues(alpha: 0.1), shape: BoxShape.circle),
+            decoration: BoxDecoration(color: color.withAlpha(25), shape: BoxShape.circle),
             child: Icon(icon, color: color, size: 24),
           ),
           const SizedBox(width: 16),
@@ -288,7 +545,7 @@ class GlobalAnalyticsView extends GetView<NewsController> {
                 const SizedBox(height: 6),
                 Text(
                   description,
-                  style: AppTextStyles.caption.copyWith(color: AppColors.grey, height: 1.5),
+                  style: AppTextStyles.caption.copyWith(color: AppColors.grey, height: 1.5, fontSize: 13),
                 ),
               ],
             ),

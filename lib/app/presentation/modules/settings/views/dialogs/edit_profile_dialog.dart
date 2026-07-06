@@ -6,6 +6,7 @@ import 'package:visionsafe/app/data/services/auth_service.dart';
 import 'package:visionsafe/app/presentation/global_widgets/molecules/v_dialog.dart';
 import 'package:visionsafe/app/presentation/global_widgets/molecules/v_toast.dart';
 import 'package:visionsafe/app/presentation/global_widgets/molecules/vizo_mascot.dart';
+import 'package:visionsafe/app/presentation/global_widgets/atoms/v_button.dart';
 
 class EditProfileDialog extends StatefulWidget {
   final AuthService authService;
@@ -16,7 +17,7 @@ class EditProfileDialog extends StatefulWidget {
     VDialog.show(
       title: "Edit Profil",
       content: EditProfileDialog(authService: authService),
-      onConfirm: () {}, // Handled inside widget state via dynamic global key or lookup
+      hideButtons: true,
     );
   }
 
@@ -66,17 +67,21 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        TextField(
-          controller: _nameCtrl,
-          style: AppTextStyles.bodyMedium,
-          decoration: InputDecoration(
-            labelText: "Nama Lengkap",
-            labelStyle: AppTextStyles.caption.copyWith(color: AppColors.primaryDark),
-            enabledBorder: const OutlineInputBorder(
-              borderSide: BorderSide(color: AppColors.primaryDark, width: 2),
-            ),
-            focusedBorder: const OutlineInputBorder(
-              borderSide: BorderSide(color: AppColors.primary, width: 3),
+        Semantics(
+          label: 'katalon_input_nama',
+          textField: true,
+          child: TextField(
+            controller: _nameCtrl,
+            style: AppTextStyles.bodyMedium,
+            decoration: InputDecoration(
+              labelText: "Nama Lengkap",
+              labelStyle: AppTextStyles.caption.copyWith(color: AppColors.primaryDark),
+              enabledBorder: const OutlineInputBorder(
+                borderSide: BorderSide(color: AppColors.primaryDark, width: 2),
+              ),
+              focusedBorder: const OutlineInputBorder(
+                borderSide: BorderSide(color: AppColors.primary, width: 3),
+              ),
             ),
           ),
         ),
@@ -89,15 +94,16 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
               child: Text("BATAL", style: AppTextStyles.bodyBold.copyWith(color: AppColors.grey)),
             ),
             const SizedBox(width: 12),
-            ElevatedButton(
-              onPressed: _isLoading ? null : _submit,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: AppColors.primaryDark,
-                side: const BorderSide(color: AppColors.primaryDark, width: 2),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            Semantics(
+              label: 'katalon_btn_simpan_profil',
+              button: true,
+              child: VButton(
+                onPressed: _submit,
+                isLoading: _isLoading,
+                label: "SIMPAN",
+                color: AppColors.primary,
+                width: 120,
               ),
-              child: Text(_isLoading ? "MENGIRIM..." : "SIMPAN", style: AppTextStyles.bodyBold),
             ),
           ],
         ),
