@@ -8,7 +8,6 @@ abstract class Routes {
   static const onboarding = _Paths.onboarding;
   static const login = _Paths.login;
   static const register = _Paths.register;
-  static const intervention = _Paths.intervention;
   static const calibration = _Paths.calibration;
   static const settings = _Paths.settings;
   static const eyeExercise = _Paths.eyeExercise;
@@ -17,6 +16,8 @@ abstract class Routes {
   static const newsDetail = _Paths.newsDetail;
   static const waitingVerification = _Paths.waitingVerification;
   static const healthQuiz = _Paths.healthQuiz;
+  static const family = _Paths.family;
+  static const stats = _Paths.stats;
 }
 
 abstract class _Paths {
@@ -27,7 +28,6 @@ abstract class _Paths {
   static const onboarding = '/onboarding';
   static const login = '/login';
   static const register = '/register';
-  static const intervention = '/intervention';
   static const calibration = '/calibration';
   static const settings = '/settings';
   static const eyeExercise = '/eye-exercise';
@@ -36,4 +36,6 @@ abstract class _Paths {
   static const newsDetail = '/news-detail';
   static const waitingVerification = '/waiting-verification';
   static const healthQuiz = '/health-quiz';
+  static const family = '/family';
+  static const stats = '/stats';
 }

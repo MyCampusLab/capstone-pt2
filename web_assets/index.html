@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VisionSafe - Hero's New Password</title>
+    
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;700;900&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <div class="card" id="mainCard">
+        <div class="decoration" id="decorEmoji">✨</div>
+        <div class="logo">VisionSafe</div>
+        
+        <!-- Pesan Dinamis (Bisa untuk Recovery atau Verification) -->
+        <div class="subtitle" id="mainSubtitle">Memeriksa link ajaibmu... 🕵️‍♂️</div>
+
+        <!-- Form Reset Password (Disembunyikan secara default) -->
+        <form id="resetForm" class="hidden-element">
+            <div class="input-group">
+                <label for="password">Password Baru</label>
+                <input type="password" id="password" required placeholder="Min. 6 karakter rahasia">
+            </div>
+            <div class="input-group">
+                <label for="confirmPassword">Ulangi Password</label>
+                <input type="password" id="confirmPassword" required placeholder="Ketik ulang sandimu">
+            </div>
+            
+            <button type="submit" id="submitBtn">
+                <span class="btn-text" id="btnText">SIMPAN & BERAKSI! ⚡</span>
+                <div class="loader" id="btnLoader"></div>
+            </button>
+        </form>
+
+        <div id="statusMessage" class="message"></div>
+        
+        <div class="footer-links">
+            <a href="/privacy.html">Kebijakan Privasi</a> | <a href="/terms.html">Syarat & Ketentuan</a>
+        </div>
+    </div>
+
+    <script>
+        // KREDENSIAL SUPABASE VISIONSAFE
+        const SUPABASE_URL = 'https://tkfxqlpmccnpzefywkef.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRrZnhxbHBtY2NucHplZnl3a2VmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzMzkxMDksImV4cCI6MjA5MzkxNTEwOX0.VHYo0vZDBz4dNR1q01oCvingPn_URqNiEzoIf-OaWjs';
+
+        (function initEnterpriseBridge() {
+            const form = document.getElementById('resetForm');
+            const statusMessage = document.getElementById('statusMessage');
+            const mainSubtitle = document.getElementById('mainSubtitle');
+            const decorEmoji = document.getElementById('decorEmoji');
+
+            // Sembunyikan form dengan CSS class
+            form.classList.add('hidden-element');
+
+            function showMessage(msg, type) {
+                statusMessage.textContent = msg;
+                statusMessage.className = `message ${type}`;
+            }
+
+            try {
+                // Ekstrak parameter dari URL (baik dari hash maupun query)
+                const searchStr = window.location.search;
+                const hashStr = window.location.hash;
+                const urlParams = new URLSearchParams(searchStr || hashStr.substring(1));
+                
+                const type = urlParams.get('type') || 'recovery'; 
+                const errorCode = urlParams.get('error_code');
+                const errorDesc = urlParams.get('error_description');
+
+                if (errorCode || errorDesc) {
+                    mainSubtitle.textContent = "Oops! Tautan Kedaluwarsa";
+                    decorEmoji.textContent = "🚫";
+                    showMessage(`Alasan: ${decodeURIComponent(errorDesc || 'Token tidak valid')}. Pastikan kamu menggunakan tautan yang paling baru dari emailmu.`, "error");
+                    return;
+                }
+
+                if (type === 'recovery') {
+                    mainSubtitle.textContent = "Membuka Aplikasi... 🦸‍♂️";
+                    decorEmoji.textContent = "✨";
+                    showMessage("Mengarahkan kamu kembali ke aplikasi VisionSafe untuk mengatur password baru.", "success");
+                } else {
+                    mainSubtitle.textContent = "Verifikasi Berhasil! 🎉";
+                    decorEmoji.textContent = "🚀";
+                    showMessage("Email kamu berhasil diverifikasi! Mengarahkan kembali ke aplikasi...", "success");
+                }
+
+                // MAGIC TRAMPOLINE: Auto Redirect ke Native App
+                // Ini akan membawa parameter (termasuk code PKCE) ke Flutter App
+                const appScheme = "com.hn.visionsafe://login-callback";
+                const deepLink = appScheme + searchStr + hashStr;
+
+                setTimeout(() => {
+                    // Coba buka dengan Intent Scheme untuk Android
+                    window.location.href = deepLink;
+                    
+                    // Fallback jika tidak otomatis terbuka
+                    setTimeout(() => {
+                        showMessage("Jika aplikasi tidak terbuka secara otomatis, silakan klik tombol di bawah ini.", "success");
+                        const btn = document.createElement('button');
+                        btn.textContent = "Buka VisionSafe";
+                        btn.onclick = () => { window.location.href = deepLink; };
+                        statusMessage.appendChild(btn);
+                    }, 2500);
+                }, 800); // Beri sedikit jeda agar user bisa melihat animasi webnya yang keren
+
+            } catch (error) {
+                mainSubtitle.textContent = "Terjadi Kesalahan Sistem 🚨";
+                decorEmoji.textContent = "💥";
+                showMessage(error.message, "error");
+            }
+        })();
+    </script>
+</body>
+</html>

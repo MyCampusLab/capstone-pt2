@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "533543112536",
+    "project_id": "bigdata-visionsafe",
+    "storage_bucket": "bigdata-visionsafe.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:533543112536:android:37b240df00fdf746829f2d",
+        "android_client_info": {
+          "package_name": "com.hn.visionsafe"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDdK-cdANLFEH18H-XYSmr4KkJWMJxKfAA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

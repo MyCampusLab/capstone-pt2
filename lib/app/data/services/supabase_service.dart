@@ -35,7 +35,7 @@ class SupabaseService extends GetxService {
         'distance': model.distance,
         'is_violation': model.isViolation,
         'is_blinking': model.isBlinking,
-        'created_at': model.timestamp.toIso8601String(),
+        'created_at': model.timestamp.toUtc().toIso8601String(),
       }).toList();
 
       // Upsert berdasarkan primary key 'id' agar idempotent
@@ -88,6 +88,17 @@ class SupabaseService extends GetxService {
     } catch (e) {
       _logger.e('Kesalahan Profil: Gagal mengambil data profil -> $e');
       return null;
+    }
+  }
+
+  /// Memperbarui waktu terakhir aktif untuk Dead-Man's Switch
+  Future<void> updateUserHeartbeat() async {
+    try {
+      final user = _supabase.auth.currentUser;
+      if (user == null) return;
+      await _supabase.from('profiles').update({'last_active_at': DateTime.now().toUtc().toIso8601String()}).eq('id', user.id);
+    } catch (e) {
+      // Abaikan error heartbeat agar tidak mengganggu flow utama
     }
   }
 
@@ -183,15 +194,17 @@ class SupabaseService extends GetxService {
     }
   }
 
-  /// Mendengarkan aliran data telemetri secara real-time (WebSockets) untuk Dasbor Orang Tua.
-  Stream<List<Map<String, dynamic>>> watchAnalyticsData({int limit = 1000}) {
+  /// Mendengarkan aliran data telemetri secara real-time (WebSockets) untuk Dasbor Orang Tua atau Diri Sendiri.
+  Stream<List<Map<String, dynamic>>> watchAnalyticsData({int limit = 1000, String? targetUserId}) {
     final user = _supabase.auth.currentUser;
     if (user == null) return const Stream.empty();
+
+    final idToWatch = targetUserId ?? user.id;
 
     return _supabase
         .from('telemetry')
         .stream(primaryKey: ['id'])
-        .eq('user_id', user.id)
+        .eq('user_id', idToWatch)
         .order('created_at', ascending: false)
         .limit(limit);
   }

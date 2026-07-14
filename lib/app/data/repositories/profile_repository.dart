@@ -29,11 +29,20 @@ class ProfileRepository {
     try {
       final data = await _supabaseService.getUserProfile();
       if (data != null) {
-        final profile = ProfileModel.fromMap(data);
-        if (user != null) {
-          await _profileBox?.put(user.id, profile.toMap());
+        final cloudProfile = ProfileModel.fromMap(data);
+        
+        // --- OFFLINE-FIRST TIMESTAMP CONFLICT RESOLUTION ---
+        if (localProfile != null && localProfile.lastActiveAt.isAfter(cloudProfile.lastActiveAt)) {
+            // Local profile is newer (offline EXP gain that failed to sync).
+            // Sync up to cloud instead of overwriting local!
+            unawaited(updateProfile(localProfile));
+            return localProfile;
         }
-        return profile;
+
+        if (user != null) {
+          await _profileBox?.put(user.id, cloudProfile.toMap());
+        }
+        return cloudProfile;
       }
     } catch (_) {}
 
@@ -80,13 +89,24 @@ class ProfileRepository {
       sub = _supabaseService.watchUserProfile().listen(
         (data) async {
           try {
-            final profile = ProfileModel.fromMap(data);
+            final cloudProfile = ProfileModel.fromMap(data);
             if (user != null) {
               await _initBox();
-              await _profileBox?.put(user.id, profile.toMap());
+              final cachedData = _profileBox?.get(user.id);
+              if (cachedData != null) {
+                try {
+                  final localProfile = ProfileModel.fromMap(Map<String, dynamic>.from(cachedData));
+                  if (localProfile.lastActiveAt.isAfter(cloudProfile.lastActiveAt)) {
+                    // Reject the outdated stream data, and push our newer local data
+                    updateProfile(localProfile);
+                    return;
+                  }
+                } catch (_) {}
+              }
+              await _profileBox?.put(user.id, cloudProfile.toMap());
             }
             if (!controller.isClosed) {
-              controller.add(profile);
+              controller.add(cloudProfile);
             }
           } catch (_) {}
         },
@@ -110,12 +130,8 @@ class ProfileRepository {
       if (data.isEmpty) throw Exception("Leaderboard empty");
       return data.map((item) => ProfileModel.fromMap(item)).toList();
     } catch (_) {
-      // Offline / table missing leaderboard fallback
-      return [
-        ProfileModel(id: 'l1', fullName: 'Fizo Master', xp: 5200, level: 7, lastActiveAt: DateTime.now()),
-        ProfileModel(id: 'l2', fullName: 'Safety Ranger', xp: 4100, level: 5, lastActiveAt: DateTime.now()),
-        ProfileModel(id: 'l3', fullName: 'Blink Expert', xp: 3200, level: 4, lastActiveAt: DateTime.now()),
-      ];
+      // Return empty list if no leaderboard data instead of dummy data
+      return [];
     }
   }
 

@@ -138,7 +138,7 @@ class LoginFormCard extends GetView<AuthController> {
       child: Padding(
         padding: const EdgeInsets.only(top: AppDesign.space12),
         child: GestureDetector(
-          onTap: () {},
+          onTap: () => controller.showForgotPasswordDialog(),
           child: Text(
             "Forgot Password?",
             style: AppTextStyles.caption.copyWith(

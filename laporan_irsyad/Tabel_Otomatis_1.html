@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+</head>
+<body style="background: white;">
+<div style="font-family: 'Times New Roman', Times, serif; width: 800px; margin: 0 auto; color: black;">
+
+<div style="text-align: center; font-size: 8pt; margin-bottom: 5px; font-variant: small-caps;">
+    TABEL 1<br>
+    KOMPARASI KONSUMSI API DAN BANDWIDTH (SIMULASI 1 JAM PEMANTAUAN PER PENGGUNA)
+</div>
+
+<table style="border-collapse: collapse; width: 100%; font-size: 9pt; text-align: center; color: black;">
+  <thead>
+    <tr>
+      <th style="border-top: 1px solid black; border-bottom: 1px solid black; padding: 3px; font-weight: normal; text-align: left;">Parameter Beban Sistem</th>
+      <th style="border-top: 1px solid black; border-bottom: 1px solid black; padding: 3px; font-weight: normal;">Sistem Konvensional</th>
+      <th style="border-top: 1px solid black; border-bottom: 1px solid black; padding: 3px; font-weight: normal;">Sistem Rollup (Usulan)</th>
+      <th style="border-top: 1px solid black; border-bottom: 1px solid black; padding: 3px; font-weight: normal;">Persentase Penghematan</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding: 3px; text-align: left;">Frekuensi <i>API Calls</i></td>
+      <td style="padding: 3px;">720 Panggilan/Jam</td>
+      <td style="padding: 3px;">4 Panggilan/Jam</td>
+      <td style="padding: 3px;">99,44%</td>
+    </tr>
+    <tr>
+      <td style="padding: 3px; text-align: left;">Ukuran Muatan Rata-rata per Panggilan</td>
+      <td style="padding: 3px;">450 Bytes</td>
+      <td style="padding: 3px;">8.120 Bytes (<i>Batched</i>)</td>
+      <td style="padding: 3px;">-</td>
+    </tr>
+    <tr>
+      <td style="border-bottom: 1px solid black; padding: 3px; text-align: left;">Estimasi Konsumsi Bandwidth Keluar</td>
+      <td style="border-bottom: 1px solid black; padding: 3px;">324 Kilobytes/Jam</td>
+      <td style="border-bottom: 1px solid black; padding: 3px;">32,4 Kilobytes/Jam</td>
+      <td style="border-bottom: 1px solid black; padding: 3px;">90,00%</td>
+    </tr>
+  </tbody>
+</table>
+
+</div>
+</body>
+</html>

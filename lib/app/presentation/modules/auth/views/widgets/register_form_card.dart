@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../controllers/auth_controller.dart';
 import 'package:visionsafe/app/presentation/global_widgets/atoms/v_button.dart';
 import 'package:visionsafe/app/presentation/global_widgets/atoms/v_input.dart';
@@ -165,14 +166,53 @@ class RegisterFormCard extends GetView<AuthController> {
   }
 
   Widget _buildTermsText() {
-    return Text(
-      "By joining, you agree to our Terms of Service.",
-      textAlign: TextAlign.center,
-      style: AppTextStyles.caption.copyWith(
-        color: AppColors.primaryDark.withValues(alpha: 0.45),
-        fontWeight: FontWeight.w600,
-        fontSize: 10,
-      ),
-    );
+    return Obx(() => Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        SizedBox(
+          height: 24,
+          width: 24,
+          child: Checkbox(
+            value: controller.agreedToTerms.value,
+            onChanged: (val) => controller.agreedToTerms.value = val ?? false,
+            activeColor: AppColors.primaryDark,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+            side: const BorderSide(color: AppColors.primaryDark, width: 2),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: GestureDetector(
+            onTap: () async {
+              final url = Uri.parse("https://visionsafe.web.id/privacy.html");
+              if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+                Get.snackbar("Error", "Gagal membuka tautan privasi.");
+              }
+            },
+            child: RichText(
+              text: TextSpan(
+                text: "I agree to the ",
+                style: AppTextStyles.caption.copyWith(
+                  color: AppColors.primaryDark.withValues(alpha: 0.6),
+                  fontWeight: FontWeight.w600,
+                  fontSize: 11,
+                ),
+                children: [
+                  TextSpan(
+                    text: "Terms of Service & Privacy Policy",
+                    style: AppTextStyles.caption.copyWith(
+                      color: AppColors.primaryDark,
+                      fontWeight: FontWeight.w800,
+                      decoration: TextDecoration.underline,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    ));
   }
 }

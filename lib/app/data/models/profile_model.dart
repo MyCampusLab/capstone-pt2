@@ -31,7 +31,7 @@ class ProfileModel {
       fullName: map['full_name'],
       avatarUrl: map['avatar_url'],
       xp: map['xp'] ?? 0,
-      level: map['level'] ?? 1,
+      level: ((map['xp'] ?? 0) ~/ 100) + 1,
       totalFocusTimeSeconds: map['total_focus_time_seconds'] ?? 0,
       totalViolations: map['total_violations'] ?? 0,
       streakDays: map['streak_days'] ?? 0,

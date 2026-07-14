@@ -1,0 +1,44 @@
+{
+  "name": "{Project Name} — {env}",
+  "values": [
+    {
+      "key": "base_url",
+      "value": "https://{domain}",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "username",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "password",
+      "value": "",
+      "type": "secret",
+      "enabled": true
+    },
+    {
+      "key": "device_name",
+      "value": "Postman",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "auth_token",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "id",
+      "value": "1",
+      "type": "default",
+      "enabled": true
+    }
+  ],
+  "_postman_variable_scope": "environment",
+  "_postman_exported_at": "2026-06-09T00:00:00.000Z",
+  "_postman_exported_using": "docs-ai/template"
+}

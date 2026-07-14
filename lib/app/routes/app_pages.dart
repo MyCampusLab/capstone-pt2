@@ -7,7 +7,6 @@ import '../presentation/modules/onboarding/views/onboarding_view.dart';
 import '../presentation/modules/auth/bindings/auth_binding.dart';
 import '../presentation/modules/auth/views/login_view.dart';
 import '../presentation/modules/auth/views/register_view.dart';
-import '../presentation/modules/intervention/views/intervention_view.dart';
 import '../presentation/modules/calibration/views/calibration_view.dart';
 import '../presentation/modules/calibration/bindings/calibration_binding.dart';
 
@@ -28,6 +27,10 @@ import '../presentation/modules/news/views/news_list_view.dart';
 import '../presentation/modules/news/views/news_detail_view.dart';
 import '../presentation/modules/news/bindings/news_binding.dart';
 import '../presentation/modules/auth/views/waiting_verification_view.dart';
+import '../presentation/modules/family/views/family_view.dart';
+import '../presentation/modules/family/bindings/family_binding.dart';
+import '../presentation/modules/stats/views/stats_view.dart';
+// Note: StatsBinding is already imported at line 21
 
 part 'app_routes.dart';
 
@@ -75,10 +78,6 @@ class AppPages {
       binding: AuthBinding(),
     ),
     GetPage(
-      name: _Paths.intervention, 
-      page: () => const InterventionView(),
-    ),
-    GetPage(
       name: _Paths.calibration, 
       page: () => const CalibrationView(), 
       binding: CalibrationBinding(),
@@ -114,6 +113,22 @@ class AppPages {
       name: _Paths.healthQuiz,
       page: () => const HealthQuizView(),
       binding: HealthQuizBinding(),
+    ),
+    GetPage(
+      name: _Paths.family,
+      page: () => const FamilyView(),
+      binding: FamilyBinding(),
+    ),
+    GetPage(
+      name: _Paths.stats,
+      page: () {
+        final args = Get.arguments;
+        final tag = (args != null && args is Map && args.containsKey('targetUserId'))
+            ? args['targetUserId'] as String
+            : null;
+        return StatsView(tag: tag);
+      },
+      binding: StatsBinding(),
     ),
   ];
 }

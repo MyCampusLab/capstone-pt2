@@ -5,6 +5,7 @@ import 'package:visionsafe/app/routes/app_pages.dart';
 import 'package:visionsafe/app/data/repositories/auth_repository.dart';
 import 'package:visionsafe/app/presentation/global_widgets/molecules/v_toast.dart';
 import 'package:visionsafe/app/presentation/global_widgets/molecules/vizo_mascot.dart';
+import 'package:visionsafe/app/presentation/global_widgets/atoms/v_button.dart';
 
 
 /// Controller untuk manajemen state dan logika UI Autentikasi.
@@ -13,6 +14,7 @@ class AuthController extends GetxController {
   AuthRepository get authRepository => Get.find<AuthRepository>();
   
   final isLoading = false.obs;
+  final agreedToTerms = false.obs;
   
   late TextEditingController nameController;
   late TextEditingController emailController;
@@ -57,6 +59,7 @@ class AuthController extends GetxController {
 
     // Listener fokus halaman Login
     loginEmailFocus.addListener(() {
+      if (_isDisposed) return;
       if (loginEmailFocus.hasFocus) {
         loginMascotState.value = VizoState.focused;
         loginLookAt.value = const Offset(0.0, 0.4); // Melirik ke kolom email
@@ -66,6 +69,7 @@ class AuthController extends GetxController {
     });
 
     loginPasswordFocus.addListener(() {
+      if (_isDisposed) return;
       if (loginPasswordFocus.hasFocus) {
         loginMascotState.value = VizoState.sleeping; // Tutup mata (tidak mengintip sandi)
         loginLookAt.value = Offset.zero;
@@ -76,6 +80,7 @@ class AuthController extends GetxController {
 
     // Listener fokus halaman Register
     regNameFocus.addListener(() {
+      if (_isDisposed) return;
       if (regNameFocus.hasFocus) {
         registerMascotState.value = VizoState.focused;
         registerLookAt.value = const Offset(-0.2, 0.3);
@@ -85,6 +90,7 @@ class AuthController extends GetxController {
     });
 
     regEmailFocus.addListener(() {
+      if (_isDisposed) return;
       if (regEmailFocus.hasFocus) {
         registerMascotState.value = VizoState.focused;
         registerLookAt.value = const Offset(0.0, 0.4);
@@ -94,6 +100,7 @@ class AuthController extends GetxController {
     });
 
     regPasswordFocus.addListener(() {
+      if (_isDisposed) return;
       if (regPasswordFocus.hasFocus) {
         registerMascotState.value = VizoState.sleeping; // Tutup mata
         registerLookAt.value = Offset.zero;
@@ -103,6 +110,7 @@ class AuthController extends GetxController {
     });
 
     regConfirmPasswordFocus.addListener(() {
+      if (_isDisposed) return;
       if (regConfirmPasswordFocus.hasFocus) {
         registerMascotState.value = VizoState.sleeping; // Tutup mata
         registerLookAt.value = Offset.zero;
@@ -113,6 +121,7 @@ class AuthController extends GetxController {
   }
 
   void _resetLoginMascot() {
+    if (_isDisposed) return;
     if (!loginEmailFocus.hasFocus && !loginPasswordFocus.hasFocus) {
       loginMascotState.value = VizoState.idle;
       loginLookAt.value = Offset.zero;
@@ -120,6 +129,7 @@ class AuthController extends GetxController {
   }
 
   void _resetRegisterMascot() {
+    if (_isDisposed) return;
     if (!regNameFocus.hasFocus && !regEmailFocus.hasFocus && 
         !regPasswordFocus.hasFocus && !regConfirmPasswordFocus.hasFocus) {
       registerMascotState.value = VizoState.happy;
@@ -135,7 +145,7 @@ class AuthController extends GetxController {
     try {
       await authRepository.login(emailController.text.trim(), passwordController.text.trim());
       VToast.show("Welcome Back!", "Good to see you again, Hero!", state: VizoState.happy);
-      _safeOffAll(Routes.mainWrapper);
+      // Routing di-handle 100% oleh AuthService (SDA Standard)
     } on AuthException catch (e) {
       String errorMsg = "Email atau password salah.";
       if (e.message.toLowerCase().contains("invalid login credentials")) {
@@ -168,7 +178,7 @@ class AuthController extends GetxController {
       if (response.session != null) {
         // Auto-login success (email confirmation might be disabled)
         VToast.show("Welcome Hero!", "Registration successful. Start your quest!", state: VizoState.happy);
-        _safeOffAll(Routes.mainWrapper);
+        // Routing di-handle 100% oleh AuthService (SDA Standard)
       } else {
         // Confirmation required, kirim args untuk polling background
         if (!_isDisposed) {
@@ -196,14 +206,15 @@ class AuthController extends GetxController {
     }
   }
 
-  /// Mengeksekusi login melalui Google OAuth.
   Future<void> loginWithGoogle() async {
     if (isLoading.value) return; // Cegah double trigger
     
     isLoading.value = true;
     try {
+      // Membuka browser untuk OAuth.
+      // Tidak perlu push route di sini, akan ditangani oleh listener isLoggedIn di AuthService
+      // saat browser meredirect kembali ke aplikasi.
       await authRepository.loginWithGoogle();
-      _safeOffAll(Routes.mainWrapper);
     } catch (e) {
       VToast.show("Kesalahan Google Auth", "Gagal masuk dengan Google.", state: VizoState.worried);
     } finally {
@@ -211,11 +222,76 @@ class AuthController extends GetxController {
     }
   }
 
+  /// Menampilkan dialog lupa password dan memproses pengiriman email.
+  void showForgotPasswordDialog() {
+    final resetEmailController = TextEditingController(text: emailController.text.trim());
+    Get.defaultDialog(
+      title: "Lupa Password?",
+      titlePadding: const EdgeInsets.only(top: 24),
+      contentPadding: const EdgeInsets.all(24),
+      content: Column(
+        children: [
+          const Text(
+            "Masukkan email kamu yang terdaftar. Kami akan mengirimkan tautan untuk mengatur ulang password.",
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: resetEmailController,
+            keyboardType: TextInputType.emailAddress,
+            decoration: const InputDecoration(
+              border: OutlineInputBorder(),
+              hintText: "hero@example.com",
+              prefixIcon: Icon(Icons.email_outlined),
+            ),
+          ),
+        ],
+      ),
+      confirm: VButton(
+        onPressed: () async {
+          final email = resetEmailController.text.trim();
+          if (!_isValidEmail(email)) {
+            Get.snackbar("Email Salah", "Format email tidak valid!", backgroundColor: Colors.red, colorText: Colors.white);
+            return;
+          }
+          Get.back(); // Tutup dialog
+          await _sendPasswordReset(email);
+        },
+        label: "Kirim Tautan",
+      ),
+      cancel: TextButton(
+        onPressed: () => Get.back(),
+        child: const Text("Batal"),
+      ),
+    );
+  }
+
+  Future<void> _sendPasswordReset(String email) async {
+    isLoading.value = true;
+    try {
+      await authRepository.resetPassword(email);
+      VToast.show(
+        "Email Terkirim!", 
+        "Cek inbox atau folder spam kamu untuk tautan reset password.", 
+        state: VizoState.happy
+      );
+    } on AuthException catch (e) {
+      VToast.show("Gagal", e.message, state: VizoState.intervention);
+    } catch (e) {
+      VToast.show("Error", "Gagal mengirim email reset.", state: VizoState.worried);
+    } finally {
+      if (!_isDisposed) isLoading.value = false;
+    }
+  }
+
   void clearFields() {
-    nameController.clear();
-    emailController.clear();
-    passwordController.clear();
-    confirmPasswordController.clear();
+    if (_isDisposed) return;
+    try {
+      nameController.clear();
+      emailController.clear();
+      passwordController.clear();
+      confirmPasswordController.clear();
+    } catch (_) {}
   }
 
   bool _isValidEmail(String email) {
@@ -248,6 +324,10 @@ class AuthController extends GetxController {
       VToast.show("Input Kosong", "Semua kolom wajib diisi.", state: VizoState.worried);
       return false;
     }
+    if (!agreedToTerms.value) {
+      VToast.show("Persetujuan Privasi", "Kamu harus menyetujui Kebijakan Privasi (COPPA) untuk melanjutkan.", state: VizoState.intervention);
+      return false;
+    }
     if (!_isValidEmail(email)) {
       VToast.show("Email Salah", "Gunakan format email yang benar ya!", state: VizoState.sad);
       return false;
@@ -268,22 +348,26 @@ class AuthController extends GetxController {
   @override
   void onClose() {
     _isDisposed = true;
-    nameController.dispose();
-    emailController.dispose();
-    passwordController.dispose();
-    confirmPasswordController.dispose();
+    
+    // Memberikan jeda sebelum menghancurkan Controller & FocusNode
+    // Ini mencegah error "used after being disposed" saat animasi transisi halaman belum selesai.
+    Future.delayed(const Duration(milliseconds: 600), () {
+      try {
+        nameController.dispose();
+        emailController.dispose();
+        passwordController.dispose();
+        confirmPasswordController.dispose();
 
-    loginEmailFocus.dispose();
-    loginPasswordFocus.dispose();
-    regNameFocus.dispose();
-    regEmailFocus.dispose();
-    regPasswordFocus.dispose();
-    regConfirmPasswordFocus.dispose();
+        loginEmailFocus.dispose();
+        loginPasswordFocus.dispose();
+        regNameFocus.dispose();
+        regEmailFocus.dispose();
+        regPasswordFocus.dispose();
+        regConfirmPasswordFocus.dispose();
+      } catch (_) {}
+    });
 
     super.onClose();
   }
 
-  void _safeOffAll(String route) {
-    if (!_isDisposed) Get.offAllNamed(route);
-  }
 }

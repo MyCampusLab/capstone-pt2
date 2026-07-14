@@ -1,0 +1,14 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.hn.visionsafe",
+      "sha256_cert_fingerprints": [
+        "5C:99:AD:D9:FE:30:33:B0:CC:85:16:EC:07:0F:58:87:D3:87:BF:72:95:08:25:BD:77:69:9A:12:02:3E:D5:43"
+      ]
+    }
+  }
+]

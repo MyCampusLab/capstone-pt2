@@ -1,0 +1,5 @@
+email,password,expected_result
+irsydfchrynto@gmail.com,testingkatalon,success
+irsydfchrynto@gmail.com,salahpassword123,error
+emailngasal@gmail.com,testingkatalon,error
+, ,error

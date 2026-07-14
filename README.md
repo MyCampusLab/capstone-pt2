@@ -21,6 +21,7 @@ This project is a high-stakes collaboration between top-tier engineers:
 | :--- | :--- | :--- |
 | **M. Irsyad Fachryanto** | Lead System Architect | [@mirsydfchrynto](https://github.com/mirsydfchrynto) |
 | **Marsha Dwi Lucyana** | Lead Frontend & UX Engineer | [@marshadwi](https://github.com/marshadwi) |
+| **Antigravity AI** | Advanced Agentic Co-Pilot | [Google DeepMind](#) |
 
 **Group Identity:** [Architect-Elite / Nexus-E]
 

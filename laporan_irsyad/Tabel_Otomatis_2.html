@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+</head>
+<body style="background: white;">
+<div style="font-family: 'Times New Roman', Times, serif; width: 600px; margin: 0 auto; color: black;">
+
+<div style="text-align: center; font-size: 8pt; margin-bottom: 6px;">
+    TABEL 1<br>
+    <span style="font-variant: small-caps;">Komparasi Konsumsi API dan Bandwidth (Simulasi 1 Jam Pemantauan per Pengguna)</span>
+</div>
+
+<table style="border-collapse: collapse; width: 100%; font-size: 9pt; text-align: left; color: black; border-top: 1px solid black; border-bottom: 1px solid black;">
+  <thead>
+    <tr>
+      <th style="border-bottom: 1px solid black; padding: 4px 6px; font-weight: normal; text-align: left;">Parameter Beban Sistem</th>
+      <th style="border-bottom: 1px solid black; padding: 4px 6px; font-weight: normal; text-align: center;">Sistem Konvensional</th>
+      <th style="border-bottom: 1px solid black; padding: 4px 6px; font-weight: normal; text-align: center;">Sistem Rollup (Usulan)</th>
+      <th style="border-bottom: 1px solid black; padding: 4px 6px; font-weight: normal; text-align: center;">Persentase Penghematan</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="border-bottom: 1px solid #ccc; padding: 4px 6px;">Frekuensi <i>API Calls</i></td>
+      <td style="border-bottom: 1px solid #ccc; padding: 4px 6px; text-align: center;">720 Panggilan/Jam</td>
+      <td style="border-bottom: 1px solid #ccc; padding: 4px 6px; text-align: center;">4 Panggilan/Jam</td>
+      <td style="border-bottom: 1px solid #ccc; padding: 4px 6px; text-align: center;">99,44%</td>
+    </tr>
+    <tr>
+      <td style="border-bottom: 1px solid #ccc; padding: 4px 6px;">Ukuran Muatan Rata-rata per Panggilan</td>
+      <td style="border-bottom: 1px solid #ccc; padding: 4px 6px; text-align: center;">450 Bytes</td>
+      <td style="border-bottom: 1px solid #ccc; padding: 4px 6px; text-align: center;">8.120 Bytes (<i>Batched</i>)</td>
+      <td style="border-bottom: 1px solid #ccc; padding: 4px 6px; text-align: center;">-</td>
+    </tr>
+    <tr>
+      <td style="padding: 4px 6px;">Estimasi Konsumsi Bandwidth Keluar</td>
+      <td style="padding: 4px 6px; text-align: center;">324 Kilobytes/Jam</td>
+      <td style="padding: 4px 6px; text-align: center;">32,4 Kilobytes/Jam</td>
+      <td style="padding: 4px 6px; text-align: center;">90,00%</td>
+    </tr>
+  </tbody>
+</table>
+
+</div>
+</body>
+</html>

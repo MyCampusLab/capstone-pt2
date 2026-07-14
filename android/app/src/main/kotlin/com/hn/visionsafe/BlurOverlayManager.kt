@@ -42,8 +42,32 @@ class BlurOverlayManager(private val context: Context) {
             windowManager?.addView(overlayView, params)
             isShowing = true
             isCurrentlyEmergency = isEmergency
+            
+            // AKTIFKAN KIOSK MODE jika ini emergency
+            VisionAccessibilityService.isPunishmentActive = isEmergency
         } catch (e: Exception) {
             Log.e("VisionSafe", "Overlay Show Failed", e)
+        }
+    }
+
+    fun showWarning(titleText: String, subtitleText: String, durationMs: Long = 3000) {
+        if (isShowing) return // Jangan timpa jika sedang emergency
+        
+        try {
+            windowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
+            val params = getLayoutParams(false) 
+            
+            overlayView = createAnimatedOverlay(false, titleText, subtitleText)
+            windowManager?.addView(overlayView, params)
+            isShowing = true
+            isCurrentlyEmergency = false
+            
+            // Hilangkan otomatis setelah durationMs (3 detik)
+            android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                hide()
+            }, durationMs)
+        } catch (e: Exception) {
+            Log.e("VisionSafe", "Warning Overlay Failed", e)
         }
     }
 
@@ -67,9 +91,9 @@ class BlurOverlayManager(private val context: Context) {
         ).apply { gravity = Gravity.CENTER }
     }
 
-    private fun createAnimatedOverlay(isEmergency: Boolean): View {
+    private fun createAnimatedOverlay(isEmergency: Boolean, customTitle: String? = null, customSubtitle: String? = null): View {
         val root = FrameLayout(context).apply {
-            setBackgroundColor(Color.parseColor(if (isEmergency) "#E6000000" else "#CC000000"))
+            setBackgroundColor(Color.parseColor(if (isEmergency) "#E6000000" else "#E6000000")) // Gelapkan sedikit untuk popup warning
         }
 
         val layout = LinearLayout(context).apply {
@@ -108,7 +132,7 @@ class BlurOverlayManager(private val context: Context) {
         }
 
         val title = TextView(context).apply {
-            text = if (isEmergency) "MATA DALAM BAHAYA!" else "VIZO SEDANG MENJAGA"
+            text = customTitle ?: if (isEmergency) "MATA DALAM BAHAYA!" else "VIZO SEDANG MENJAGA"
             setTextColor(if (isEmergency) Color.parseColor("#FF6B6B") else Color.parseColor("#00D2FF"))
             textSize = 28f
             gravity = Gravity.CENTER
@@ -116,7 +140,7 @@ class BlurOverlayManager(private val context: Context) {
         }
 
         val subtitle = TextView(context).apply {
-            text = if (isEmergency) 
+            text = customSubtitle ?: if (isEmergency) 
                 "Jarak Anda terlalu dekat dengan layar. Mundur sekarang untuk melindungi mata." 
             else 
                 "Jarak aman terdeteksi. Teruskan kebiasaan baik ini!"
@@ -173,6 +197,7 @@ class BlurOverlayManager(private val context: Context) {
     fun hide() {
         if (!isShowing) return
         try {
+            VisionAccessibilityService.isPunishmentActive = false
             animators.forEach { it.cancel() }
             animators.clear()
 

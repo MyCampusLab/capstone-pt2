@@ -13,8 +13,11 @@
     <!-- Izin Overlay (Untuk Blur Layar) -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
     
+    <!-- Izin Notifikasi (Dibutuhkan untuk Foreground Service di Android 13+) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    
     <application
-        android:label="visionsafe"
+        android:label="VisionSafe"
         android:name="${applicationName}"
         android:icon="@mipmap/launcher_icon">
         
@@ -73,6 +76,19 @@
             android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="camera" />
+
+        <!-- Kiosk Mode / Anti-Bypass Accessibility Service -->
+        <service
+            android:name=".VisionAccessibilityService"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/accessibility_service_config" />
+        </service>
 
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->

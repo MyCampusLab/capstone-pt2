@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:logger/logger.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 
 enum LogSeverity { info, warn, error, critical }
 
@@ -64,10 +66,31 @@ class ObservabilityService extends GetxService {
         break;
       case LogSeverity.error:
         _logger.e('[$category] $message', error: error, stackTrace: stackTrace);
+        if (!kDebugMode) {
+          FirebaseCrashlytics.instance.recordError(error ?? message, stackTrace, reason: '[$category] $message', fatal: false);
+        }
         break;
       case LogSeverity.critical:
         _logger.f('[$category] CRITICAL: $message', error: error, stackTrace: stackTrace);
+        if (!kDebugMode) {
+          FirebaseCrashlytics.instance.recordError(error ?? message, stackTrace, reason: '[$category] $message', fatal: true);
+        }
         break;
+    }
+  }
+
+  // --- ANALYTICS TRACKING ---
+  // Fungsi ini otomatis terhubung ke Firebase Analytics untuk melacak
+  // total download, klik fitur, dan kebiasaan pengguna.
+  Future<void> trackEvent(String eventName, {Map<String, Object>? parameters}) async {
+    try {
+      await FirebaseAnalytics.instance.logEvent(
+        name: eventName,
+        parameters: parameters,
+      );
+      if (kDebugMode) _logger.i('[ANALYTICS] Tracked: $eventName');
+    } catch (e) {
+      _logger.w('Gagal mengirim Analytics: $e');
     }
   }
 

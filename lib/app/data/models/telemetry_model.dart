@@ -10,6 +10,7 @@ class TelemetryModel {
   final bool isBlinking;
   final String eyeMovement;
   final bool isSquinting;
+  final bool isLowLight;
   final DateTime timestamp;
 
   TelemetryModel({
@@ -19,6 +20,7 @@ class TelemetryModel {
     required this.isBlinking,
     this.eyeMovement = 'center',
     this.isSquinting = false,
+    this.isLowLight = false,
     required this.timestamp,
   }) : id = id ?? UuidGenerator.generateV4();
 
@@ -30,6 +32,7 @@ class TelemetryModel {
       'isBlinking': isBlinking,
       'eyeMovement': eyeMovement,
       'isSquinting': isSquinting,
+      'isLowLight': isLowLight,
       'timestamp': timestamp.millisecondsSinceEpoch,
     };
   }
@@ -42,6 +45,7 @@ class TelemetryModel {
       isBlinking: map['isBlinking'] ?? false,
       eyeMovement: map['eyeMovement'] as String? ?? 'center',
       isSquinting: map['isSquinting'] as bool? ?? false,
+      isLowLight: map['isLowLight'] as bool? ?? false,
       timestamp: DateTime.fromMillisecondsSinceEpoch(map['timestamp'] as int),
     );
   }

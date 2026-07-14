@@ -130,53 +130,45 @@ class VisionAnalyzer(private val context: Context) {
 
             val pixelIpd3d = sqrt(dx.pow(2) + dy.pow(2) + dz.pow(2))
             
-            // 3. AUTO-CALIBRATION MENGGUNAKAN DIAMETER IRIS (KONSTANTA BIOLOGIS MANUSIA)
-            // Fakta Medis Global: Diameter Iris manusia (bayi hingga dewasa) selalu konstan di angka ~1.17 cm.
-            // Kita menggunakan Iris untuk melacak proporsi wajah asli pengguna, lalu menghitung IPD aslinya!
-            if (landmarks.size >= 478) {
-                // Left Iris Horizontal Edges (469 - 471)
-                val lIrisDx = (landmarks[469].x() - landmarks[471].x()) * bitmap.width
-                val lIrisDy = (landmarks[469].y() - landmarks[471].y()) * bitmap.height
-                val pixelIrisLeft = sqrt(lIrisDx.pow(2) + lIrisDy.pow(2))
-
-                // Right Iris Horizontal Edges (474 - 476)
-                val rIrisDx = (landmarks[474].x() - landmarks[476].x()) * bitmap.width
-                val rIrisDy = (landmarks[474].y() - landmarks[476].y()) * bitmap.height
-                val pixelIrisRight = sqrt(rIrisDx.pow(2) + rIrisDy.pow(2))
-
-                val avgPixelIris = (pixelIrisLeft + pixelIrisRight) / 2.0
-                
-                if (avgPixelIris > 2.0) { // Cegah noise ekstrim saat blur
-                    val instantIpdCm = (pixelIpd3d / avgPixelIris) * 1.17
-                    
-                    // Validasi kewajaran IPD Manusia (4.0 cm Balita - 7.5 cm Dewasa Besar)
-                    if (instantIpdCm in 4.0..7.5) {
-                        // Slow-Adapt IPD: Proporsi wajah tidak berubah cepat, jadi kita pakai smoothing 98%
-                        smoothedPhysicalIpdCm = (instantIpdCm * 0.02) + (smoothedPhysicalIpdCm * 0.98)
-                    }
-                }
-            }
+            // 3. PENGHAPUSAN AUTO-CALIBRATION IRIS (SISTEM LEBIH STABIL)
+            // Mengukur iris (1.17cm) dari jarak 40cm menghasilkan distorsi 'Pixel Quantization'.
+            // Menggunakan konstanta biologis IPD rata-rata (6.0 cm) agar tidak terlalu sensitif.
+            val physicalIpdCm = 6.0
 
             // 4. Validasi Head Pose (Menoleh Ekstrem)
             val headTurnRatio = abs(dz) / pixelIpd3d
             if (headTurnRatio > 0.55) {
                 // BUG FIX: Mengembalikan null jika wajah terlalu miring agar sistem tidak "stuck/freeze"
-                // pada jarak terakhir. Ini memungkinkan overlay peringatan untuk hilang (dismiss).
                 return null
             }
             
-            // 5. Konversi ke Jarak Nyata (Pinhole Camera Model dengan Hardware-Agnostic Optics)
-            // BUG FIX (Audit Mode): Menangani rotasi layar (Portrait/Landscape) dan rasio crop CameraX.
-            // Membandingkan dimensi maksimal (max_dim) menjamin keakuratan rasio tanpa terpengaruh orientasi.
+            // 5. Konversi ke Jarak Nyata (Absolute Trigonometry Pinhole)
             val maxBitmapDim = max(bitmap.width, bitmap.height).toDouble()
-            val effectiveFocalLength = dynamicFocalLengthPixels * (maxBitmapDim / sensorActiveWidthPixels)
-            val rawDistance = (smoothedPhysicalIpdCm * effectiveFocalLength) / pixelIpd3d
             
-            // 6. Smart Snap Filter (Low-Pass Filter)
-            if (lastDistance == 0.0 || abs(rawDistance - lastDistance) > 15.0) {
+            // HARD-FIX: Mengabaikan dynamicFocalLengthPixels dari Camera2 API sepenuhnya!
+            // Alasan: CameraX di banyak perangkat memotong (crop) sensor fisik untuk rasio 16:9,
+            // sehingga rasio (maxBitmapDim / sensorActiveWidthPixels) hancur dan membuat jarak menyusut!
+            // Kita paksa menggunakan standar FOV 64 derajat (0.80 * max_dim) untuk akurasi presisi nyata.
+            val effectiveFocalLength = maxBitmapDim * 0.80
+            
+            val sharedPref = context.getSharedPreferences("VisionSafePrefs", Context.MODE_PRIVATE)
+            val calibrationMultiplier = sharedPref.getFloat("calibrationMultiplier", 1.0f).toDouble()
+            
+            val rawDistance = ((physicalIpdCm * effectiveFocalLength) / pixelIpd3d) * calibrationMultiplier
+            
+            // 6. Smart Dynamic Low-Pass Filter (Mencegah Lag 31-35cm)
+            // Masalah Sebelumnya: Smoothing 0.25 pada Sampling 1000ms membuat update lambat hingga 5 detik!
+            // Solusi: Jika perubahan besar, respons cepat. Jika perubahan kecil, perhalus untuk hilangkan jitter.
+            if (lastDistance == 0.0) {
                 lastDistance = rawDistance
             } else {
-                lastDistance = (rawDistance * SMOOTHING_FACTOR) + (lastDistance * (1.0 - SMOOTHING_FACTOR))
+                val delta = abs(rawDistance - lastDistance)
+                val dynamicSmoothing = when {
+                    delta > 10.0 -> 1.0 // Snap instan jika user bergerak sangat jauh (hilangkan lag)
+                    delta > 3.0 -> 0.7  // Respons cepat untuk pergerakan sedang
+                    else -> 0.3         // Respons lambat untuk meredam jitter/noise saat user diam
+                }
+                lastDistance = (rawDistance * dynamicSmoothing) + (lastDistance * (1.0 - dynamicSmoothing))
             }
             
             // 5. Deteksi Kedipan & Pergerakan Mata via Blendshapes
@@ -250,17 +242,45 @@ class VisionAnalyzer(private val context: Context) {
             }
 
             val isSquinting = squint > 0.35f
+            
+            val isLowLightStatus = isLowLight(imageProxy)
 
-            return AnalysisResult(lastDistance, isBlinking, eyeMovement, isSquinting)
+            return AnalysisResult(lastDistance, isBlinking, eyeMovement, isSquinting, isLowLightStatus)
         }
         return null
+    }
+
+    private fun isLowLight(imageProxy: ImageProxy): Boolean {
+        try {
+            if (imageProxy.planes.isEmpty()) return false
+            val yPlane = imageProxy.planes[0].buffer
+            yPlane.rewind()
+            
+            var sumLuma = 0L
+            val size = yPlane.remaining()
+            if (size == 0) return false
+            
+            val step = 100 
+            var count = 0
+            for (i in 0 until size step step) {
+                val pixel = yPlane.get(i).toInt() and 0xFF
+                sumLuma += pixel
+                count++
+            }
+            yPlane.rewind()
+            val avgLuma = sumLuma.toDouble() / count
+            return avgLuma < 40.0 // Threshold pencahayaan gelap
+        } catch (e: Exception) {
+            return false
+        }
     }
 
     data class AnalysisResult(
         val distance: Double, 
         val isBlinking: Boolean,
         val eyeMovement: String,
-        val isSquinting: Boolean
+        val isSquinting: Boolean,
+        val isLowLight: Boolean
     )
 
     private fun ImageProxy.toBitmapOptimized(): Bitmap {

@@ -3,7 +3,7 @@
 
 -keep class com.google.mediapipe.** { *; }
 -keep class androidx.camera.** { *; }
--keep class com.hn.visionsafe.** { *; }
+# -keep class com.hn.visionsafe.** { *; } // DIHAPUS: Obfuscation SEKARANG AKTIF untuk mengamankan APK.
 
 -dontwarn com.google.mediapipe.**
 -dontwarn androidx.camera.**

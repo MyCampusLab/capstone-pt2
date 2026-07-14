@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kebijakan Privasi - VisionSafe</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="card card-large">
+        <div class="logo">VisionSafe</div>
+        <div class="subtitle">Kebijakan Privasi & Perlindungan Data (COPPA Compliant)</div>
+
+        <div class="content-text">
+            <h2>1. Perlindungan Anak Sepenuhnya</h2>
+            <p>VisionSafe dirancang dari awal untuk menjadi lingkungan yang sangat aman bagi anak. Kami sepenuhnya mematuhi <strong>Children's Online Privacy Protection Act (COPPA)</strong>. Aplikasi ini tidak pernah mengunggah, menyimpan, atau mengirimkan gambar wajah anak ke server cloud manapun.</p>
+
+            <h2>2. Penggunaan Kamera Lokal (Edge AI)</h2>
+            <p>Izin kamera semata-mata digunakan untuk algoritma <em>Machine Learning</em> lokal (MediaPipe) pada perangkat (HP) Anda untuk mengukur jarak wajah dan mendeteksi postur. Setelah frame video diproses menjadi koordinat angka matematis secara <em>real-time</em>, frame tersebut langsung <strong>dimusnahkan di memori lokal</strong>.</p>
+
+            <h2>3. Pengumpulan Data Telemetri</h2>
+            <p>Data yang kami kirim ke <em>Database Supabase</em> hanyalah data agregasi anonim, seperti:</p>
+            <ul>
+                <li>Durasi Sesi Layar (Menit)</li>
+                <li>Rata-rata Jarak Baca (CM)</li>
+                <li>Jumlah Teguran (Kali)</li>
+                <li>Pencapaian Gamifikasi (XP & Level)</li>
+            </ul>
+
+            <h2>4. Penghapusan Akun & Data</h2>
+            <p>Sesuai standar Google Play, Anda memiliki kendali penuh atas data Anda. Anda dapat menggunakan fitur <strong>"Hapus Akun & Data"</strong> di menu Pengaturan aplikasi untuk memusnahkan seluruh riwayat telemetri, identitas, dan kredensial Anda dari server Cloud kami secara permanen.</p>
+
+            <h2>5. Pemantauan Latar Belakang (Foreground Service)</h2>
+            <p>Untuk melindungi mata anak secara berkelanjutan, VisionSafe menggunakan layanan latar depan (<strong>Foreground Service</strong>) yang terikat dengan notifikasi sistem. Layanan ini memungkinkan kami memantau jarak mata melalui kamera secara terus-menerus <strong>meskipun aplikasi disembunyikan atau pengguna sedang menggunakan aplikasi lain</strong>. Pemantauan <em>background</em> ini sangat krusial agar perlindungan tidak terputus. Sama seperti pemrosesan reguler, pemrosesan latar belakang ini tetap berjalan 100% secara lokal dan tidak ada satupun rekaman gambar yang disimpan atau dikirim ke internet.</p>
+        </div>
+
+        <div class="footer-links" style="margin-top: 40px; text-align: center;">
+            <a href="/index.html">Kembali ke Beranda</a> | <a href="/terms.html">Syarat & Ketentuan</a>
+        </div>
+    </div>
+</body>
+</html>

@@ -22,6 +22,11 @@ class AuthRepository extends GetxService {
     await _authService.nativeGoogleSignIn();
   }
 
+  /// Meminta pengiriman email reset password.
+  Future<void> resetPassword(String email) async {
+    await _authService.resetPassword(email);
+  }
+
   /// Mengambil data user yang sedang login.
   User? get currentUser => _authService.currentUser.value;
 

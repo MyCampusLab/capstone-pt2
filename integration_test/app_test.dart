@@ -102,11 +102,6 @@ void main() {
         debugPrint("TAKE_SCREENSHOT: 11_news_list");
         await tester.pump(const Duration(seconds: 2));
 
-        // 12. Intervention Screen
-        Get.offAllNamed(Routes.intervention);
-        await settleRoute(tester);
-        debugPrint("TAKE_SCREENSHOT: 12_intervention");
-        await tester.pump(const Duration(seconds: 2));
 
         debugPrint("TAKE_SCREENSHOT_DONE");
       } catch (e, stack) {

@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:visionsafe/app/core/values/app_colors.dart';
 import 'package:visionsafe/app/core/values/app_text_styles.dart';
 import 'package:visionsafe/app/presentation/global_widgets/molecules/vizo_mascot.dart';
+import 'package:visionsafe/app/presentation/global_widgets/atoms/v_button.dart';
 import 'package:visionsafe/app/routes/app_pages.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -37,7 +38,7 @@ class _WaitingVerificationViewState extends State<WaitingVerificationView> {
   }
 
   void _startPolling() {
-    _pollingTimer = Timer.periodic(const Duration(seconds: 3), (timer) async {
+    _pollingTimer = Timer.periodic(const Duration(seconds: 5), (timer) async {
       try {
         final response = await Supabase.instance.client.auth.signInWithPassword(
           email: _email!,
@@ -45,12 +46,13 @@ class _WaitingVerificationViewState extends State<WaitingVerificationView> {
         );
         
         if (response.session != null) {
-          // Berhasil login! (Artinya user sudah klik verifikasi di laptop/perangkat lain)
+          // Berhasil login secara background!
+          // Routing di-handle 100% oleh AuthService (ever listener) untuk mencegah double-navigation
           _pollingTimer?.cancel();
-          Get.offAllNamed(Routes.mainWrapper);
         }
       } catch (e) {
         // Akan error 'Email not confirmed' selama belum di-klik, biarkan saja.
+        // Interval 5 detik mencegah trigger Rate Limit (Too many requests) Supabase.
       }
     });
   }
@@ -62,15 +64,27 @@ class _WaitingVerificationViewState extends State<WaitingVerificationView> {
   }
 
   Future<void> _openEmailApp() async {
-    final Uri emailLaunchUri = Uri(
-      scheme: 'mailto',
-    );
+    // Metode 1: Coba buka aplikasi Gmail langsung (Android) atau Apple Mail (iOS)
+    final Uri gmailUri = Uri.parse('googlegmail://');
+    final Uri iosMailUri = Uri.parse('message://');
+    
     try {
-      await launchUrl(emailLaunchUri);
+      if (await canLaunchUrl(gmailUri)) {
+        await launchUrl(gmailUri);
+      } else if (await canLaunchUrl(iosMailUri)) {
+        await launchUrl(iosMailUri);
+      } else {
+        // Metode 2: Fallback sangat aman. Buka inbox Web Gmail. 
+        // Di Android modern, link ini otomatis ditangkap oleh Aplikasi Gmail tanpa membuka compose!
+        await launchUrl(
+          Uri.parse('https://mail.google.com/mail/u/0/#inbox'),
+          mode: LaunchMode.externalApplication,
+        );
+      }
     } catch (e) {
       Get.snackbar(
         "Oops!", 
-        "Tidak dapat membuka aplikasi email secara otomatis.",
+        "Tidak dapat membuka kotak masuk secara otomatis. Silakan buka emailmu secara manual.",
         backgroundColor: AppColors.danger.withValues(alpha: 0.1),
         colorText: AppColors.danger,
         margin: const EdgeInsets.all(16),
@@ -128,25 +142,11 @@ class _WaitingVerificationViewState extends State<WaitingVerificationView> {
               const SizedBox(height: 32),
               
               // Action Buttons
-              ElevatedButton.icon(
+              VButton(
+                label: "Buka Kotak Masuk Gmail",
+                icon: Icons.mark_email_unread_rounded,
                 onPressed: _openEmailApp,
-                icon: const Icon(Icons.mail_outline_rounded, size: 24),
-                label: const Text(
-                  "Buka Aplikasi Email",
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  elevation: 0,
-                ),
+                color: AppColors.primary,
               ),
               const SizedBox(height: 16),
               

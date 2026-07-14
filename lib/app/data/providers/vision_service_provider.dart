@@ -58,6 +58,31 @@ class VisionServiceProvider extends GetxService {
     }
   }
 
+  Future<void> requestAutoStartPermission() async {
+    try {
+      await _channel.invokeMethod('requestAutoStartPermission');
+    } on PlatformException catch (e) {
+      _logger.e('Failed to request auto start permission: ${e.message}');
+    }
+  }
+
+  Future<bool> checkAccessibilityPermission() async {
+    try {
+      return await _channel.invokeMethod('checkAccessibilityPermission') ?? false;
+    } on PlatformException catch (e) {
+      _logger.e('Failed to check accessibility permission: ${e.message}');
+      return false;
+    }
+  }
+
+  Future<void> requestAccessibilityPermission() async {
+    try {
+      await _channel.invokeMethod('requestAccessibilityPermission');
+    } on PlatformException catch (e) {
+      _logger.e('Failed to request accessibility permission: ${e.message}');
+    }
+  }
+
   Future<bool> isServiceRunning() async {
     try {
       final result = await _channel.invokeMethod<bool>('isServiceRunning');
@@ -77,12 +102,30 @@ class VisionServiceProvider extends GetxService {
     }
   }
 
+  Future<void> setCalibrationMultiplier(double multiplier) async {
+    try {
+      await _channel.invokeMethod('setCalibrationMultiplier', {'multiplier': multiplier});
+      _logger.i('Calibration multiplier updated to: $multiplier');
+    } on PlatformException catch (e) {
+      _logger.e('Failed to update calibration multiplier: ${e.message}');
+    }
+  }
+
   Future<void> updateSamplingRate(int samplingRateMs) async {
     try {
       await _channel.invokeMethod('updateSamplingRate', {'samplingRate': samplingRateMs});
       _logger.i('Sampling rate updated to: $samplingRateMs ms');
     } on PlatformException catch (e) {
       _logger.e('Failed to update sampling rate: ${e.message}');
+    }
+  }
+
+  Future<void> updateGpuDelegation(bool isEnabled) async {
+    try {
+      await _channel.invokeMethod('updateGpuDelegation', {'isEnabled': isEnabled});
+      _logger.i('GPU Delegation updated to: $isEnabled');
+    } on PlatformException catch (e) {
+      _logger.e('Failed to update GPU delegation: ${e.message}');
     }
   }
 }

@@ -1,0 +1,31 @@
+No,NamaBaru,JarakAman,ExpectedResult
+1,Irsyad Alpha,30,Success
+2,Irsyad Beta,35,Success
+3,Irsyad Gamma,40,Success
+4,Irsyad Delta,30,Success
+5,Irsyad Epsilon,45,Success
+6,Irsyad Zeta,35,Success
+7,Irsyad Eta,50,Success
+8,Irsyad Theta,30,Success
+9,Irsyad Iota,40,Success
+10,Irsyad Kappa,35,Success
+11,Irsyad Lambda,30,Success
+12,Irsyad Mu,45,Success
+13,Irsyad Nu,35,Success
+14,Irsyad Xi,40,Success
+15,Irsyad Omicron,30,Success
+16,Irsyad Pi,50,Success
+17,Irsyad Rho,35,Success
+18,Irsyad Sigma,45,Success
+19,Irsyad Tau,30,Success
+20,Irsyad Upsilon,40,Success
+21,,30,Fail_EmptyName
+22,I,35,Fail_NameTooShort
+23,Irsyad 23,10,Fail_DistanceTooClose
+24,Irsyad 24,100,Fail_DistanceTooFar
+25,User!@#,30,Fail_InvalidChars
+26,,40,Fail_EmptyName
+27,A,45,Fail_NameTooShort
+28,Irsyad 28,15,Fail_DistanceTooClose
+29,Irsyad 29,150,Fail_DistanceTooFar
+30,User<>?,35,Fail_InvalidChars

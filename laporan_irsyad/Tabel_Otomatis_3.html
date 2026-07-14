@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+</head>
+<body style="background: white;">
+<div style="font-family: 'Times New Roman', Times, serif; width: 700px; margin: 0 auto; color: black;">
+
+<div style="text-align: center; font-size: 8pt; margin-bottom: 6px;">
+    TABEL 2<br>
+    <span style="font-variant: small-caps;">Matriks Pengujian Penetrasi Hak Akses Basis Data (RLS)</span>
+</div>
+
+<table style="border-collapse: collapse; width: 100%; font-size: 9pt; text-align: left; color: black; border-top: 1px solid black; border-bottom: 1px solid black;">
+  <thead>
+    <tr>
+      <th style="border-bottom: 1px solid black; padding: 4px 6px; font-weight: normal; text-align: left;">Aktor & Token JWT</th>
+      <th style="border-bottom: 1px solid black; padding: 4px 6px; font-weight: normal; text-align: left;">Upaya Eksekusi (Kueri SQL via REST)</th>
+      <th style="border-bottom: 1px solid black; padding: 4px 6px; font-weight: normal; text-align: left;">Respons Sistem (Aktual)</th>
+      <th style="border-bottom: 1px solid black; padding: 4px 6px; font-weight: normal; text-align: center;">Status Validasi</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="border-bottom: 1px solid #ccc; padding: 4px 6px;">Anak (Pengguna A)</td>
+      <td style="border-bottom: 1px solid #ccc; padding: 4px 6px;"><i>SELECT</i> Log Telemetri milik Pengguna B</td>
+      <td style="border-bottom: 1px solid #ccc; padding: 4px 6px;">Mengembalikan himpunan kosong []</td>
+      <td style="border-bottom: 1px solid #ccc; padding: 4px 6px; text-align: center;">LULUS (Aman)</td>
+    </tr>
+    <tr>
+      <td style="border-bottom: 1px solid #ccc; padding: 4px 6px;">Anak (Pengguna A)</td>
+      <td style="border-bottom: 1px solid #ccc; padding: 4px 6px;"><i>DELETE</i> pada tabel Grup Keluarga (<i>groups</i>)</td>
+      <td style="border-bottom: 1px solid #ccc; padding: 4px 6px;"><i>HTTP 403 Forbidden</i> (Akses ditolak RLS)</td>
+      <td style="border-bottom: 1px solid #ccc; padding: 4px 6px; text-align: center;">LULUS (Aman)</td>
+    </tr>
+    <tr>
+      <td style="border-bottom: 1px solid #ccc; padding: 4px 6px;">Orang Tua (Pengawas)</td>
+      <td style="border-bottom: 1px solid #ccc; padding: 4px 6px;"><i>SELECT</i> Log Telemetri milik Pengguna A</td>
+      <td style="border-bottom: 1px solid #ccc; padding: 4px 6px;"><i>HTTP 200 OK</i> (Data diretur valid)</td>
+      <td style="border-bottom: 1px solid #ccc; padding: 4px 6px; text-align: center;">LULUS (Valid)</td>
+    </tr>
+    <tr>
+      <td style="padding: 4px 6px;">Pengguna Anonim</td>
+      <td style="padding: 4px 6px;"><i>INSERT</i> Log tanpa <i>Header Authentication</i></td>
+      <td style="padding: 4px 6px;"><i>HTTP 401 Unauthorized</i></td>
+      <td style="padding: 4px 6px; text-align: center;">LULUS (Aman)</td>
+    </tr>
+  </tbody>
+</table>
+
+</div>
+</body>
+</html>
